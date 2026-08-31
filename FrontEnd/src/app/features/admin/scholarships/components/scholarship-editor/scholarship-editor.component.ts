@@ -1,7 +1,7 @@
-import { Component, effect, inject, input, output } from '@angular/core';
+import { Component, effect, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ReferenceItem } from '../../../../../core/models/api.models';
-import { Scholarship, ScholarshipPayload } from '../../../../../core/models/scholarship.models';
+import { ApplicationRequirement, ApplicationRequirementType, Scholarship, ScholarshipPayload } from '../../../../../core/models/scholarship.models';
 import { CountryService } from '../../../../../core/services/country.service';
 
 @Component({
@@ -21,6 +21,9 @@ export class ScholarshipEditorComponent {
   readonly saving = input(false);
   readonly submitted = output<ScholarshipPayload>();
   readonly dismissed = output<void>();
+  readonly requirements = signal<ApplicationRequirement[]>([]);
+  readonly requirementTypes: ApplicationRequirementType[] = ['text', 'textarea', 'number', 'date', 'select', 'boolean'];
+  readonly profileFields = ['name', 'email', 'phone', 'dateOfBirth', 'gender', 'nationality', 'country', 'address', 'university', 'faculty', 'department', 'degree', 'graduationYear', 'GPA', 'targetDegreeLevel', 'englishLevel', 'IELTS', 'TOEFL'];
 
   readonly form = this.fb.nonNullable.group({
     title: ['', [Validators.required, Validators.minLength(2)]],
@@ -46,6 +49,7 @@ export class ScholarshipEditorComponent {
   private readonly syncEditor = effect(() => {
     const item = this.editing();
     this.form.reset(this.emptyValues());
+    this.requirements.set((item?.applicationRequirements ?? []).map((requirement) => ({ ...requirement, options: [...(requirement.options ?? [])] })));
     if (!item) return;
 
     this.form.patchValue({
@@ -71,7 +75,7 @@ export class ScholarshipEditorComponent {
   });
 
   submit(): void {
-    if (this.form.invalid) {
+    if (this.form.invalid || !this.requirementsValid()) {
       this.form.markAllAsTouched();
       return;
     }
@@ -97,8 +101,49 @@ export class ScholarshipEditorComponent {
         eligibleFields: this.list(raw.fields),
         gender: (raw.gender || undefined) as 'Male' | 'Female' | undefined
       },
-      requiredDocuments: this.list(raw.documents).map((type) => ({ type, required: true }))
+      requiredDocuments: this.list(raw.documents).map((type) => ({ type, required: true })),
+      applicationRequirements: this.requirements().map((requirement) => ({
+        ...requirement,
+        key: requirement.key.trim(),
+        label: requirement.label.trim(),
+        labelAr: requirement.labelAr?.trim() || undefined,
+        options: requirement.options?.map((option) => option.trim()).filter(Boolean) ?? [],
+        profileField: requirement.source === 'profile' ? requirement.profileField : undefined
+      }))
     });
+  }
+
+  addRequirement(): void {
+    this.requirements.update((items) => [...items, {
+      key: '', label: '', labelAr: '', type: 'text', required: true,
+      source: 'application', options: []
+    }]);
+  }
+
+  removeRequirement(index: number): void {
+    this.requirements.update((items) => items.filter((_, current) => current !== index));
+  }
+
+  updateRequirement(index: number, field: keyof ApplicationRequirement, value: unknown): void {
+    this.requirements.update((items) => items.map((requirement, current) => {
+      if (current !== index) return requirement;
+      const next = { ...requirement, [field]: value } as ApplicationRequirement;
+      if (field === 'source' && value === 'application') delete next.profileField;
+      return next;
+    }));
+  }
+
+  updateRequirementOptions(index: number, value: string): void {
+    this.updateRequirement(index, 'options', this.list(value));
+  }
+
+  requirementsValid(): boolean {
+    const keys = this.requirements().map((requirement) => requirement.key.trim());
+    return this.requirements().every((requirement) =>
+      /^[A-Za-z][A-Za-z0-9_.-]*$/.test(requirement.key.trim()) &&
+      Boolean(requirement.label.trim()) &&
+      (requirement.source === 'application' || Boolean(requirement.profileField))
+    ) && new Set(keys).size === keys.length;
   }
 
   private emptyValues() {

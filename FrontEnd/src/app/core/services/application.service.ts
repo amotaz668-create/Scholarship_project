@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, ListResponse } from '../models/api.models';
-import { ApplicationStatus, CreateApplicationPayload, ScholarshipApplication } from '../models/application.models';
+import { ApplicationPreparation, ApplicationStatus, CreateApplicationPayload, ScholarshipApplication, UpdateApplicationPayload } from '../models/application.models';
 
 @Injectable({ providedIn: 'root' })
 export class ApplicationService {
@@ -21,12 +21,20 @@ export class ApplicationService {
     return this.http.get<ListResponse<ScholarshipApplication>>(`${environment.apiUrl}/applications`);
   }
 
+  assignedApplications(): Observable<ListResponse<ScholarshipApplication>> {
+    return this.http.get<ListResponse<ScholarshipApplication>>(`${environment.apiUrl}/applications/assigned/me`);
+  }
+
   getById(id: string): Observable<ApiResponse<ScholarshipApplication>> {
     return this.http.get<ApiResponse<ScholarshipApplication>>(`${environment.apiUrl}/applications/${id}`);
   }
 
-  update(id: string, payload: Partial<CreateApplicationPayload>): Observable<ApiResponse<ScholarshipApplication>> {
-    return this.http.patch<ApiResponse<ScholarshipApplication>>(`${environment.apiUrl}/applications/${id}`, payload);
+  prepare(id: string): Observable<ApiResponse<ApplicationPreparation>> {
+    return this.http.get<ApiResponse<ApplicationPreparation>>(`${environment.apiUrl}/applications/${id}/prepare`);
+  }
+
+  update(id: string, payload: UpdateApplicationPayload): Observable<ApiResponse<ApplicationPreparation>> {
+    return this.http.patch<ApiResponse<ApplicationPreparation>>(`${environment.apiUrl}/applications/${id}`, payload);
   }
 
   submit(id: string): Observable<ApiResponse<ScholarshipApplication>> {

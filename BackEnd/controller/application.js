@@ -2,6 +2,10 @@ const applicationService = require("../services/application");
 
 const { createLog } = require("../services/adminLog.service");
 
+const sendError = (res, error, fallbackStatus = 400) => res
+  .status(error.statusCode || fallbackStatus)
+  .json({ success: false, message: error.message, ...(error.details ? { missing: error.details } : {}) });
+
 // ==========================================
 // 1. إنشاء طلب تقديم جديد
 // ==========================================
@@ -12,7 +16,7 @@ const createApplication = async (req, res) => {
 
     const { scholarshipId, documents, answers } = req.body;
 
-    const newApp = await applicationService.createApplication(
+    const result = await applicationService.createApplication(
       studentId,
       scholarshipId,
       {
@@ -23,14 +27,12 @@ const createApplication = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: "Application created successfully",
-      data: newApp,
+      message: result.reused ? "Existing draft application loaded" : "Application created successfully",
+      data: result.application,
+      reused: result.reused,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -49,7 +51,7 @@ const updateApplicationStatus = async (req, res) => {
     const updatedApp = await applicationService.updateApplicationStatus(
       applicationId,
       status,
-      userId,
+      req.user,
       note,
     );
 
@@ -80,10 +82,7 @@ const updateApplicationStatus = async (req, res) => {
       data: updatedApp,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -96,7 +95,7 @@ const getStudentApplications = async (req, res) => {
     const studentId = req.user.id;
 
     const applications =
-      await applicationService.getStudentApplications(studentId);
+      await applicationService.getStudentApplications(req.user);
 
     res.status(200).json({
       success: true,
@@ -104,10 +103,7 @@ const getStudentApplications = async (req, res) => {
       data: applications,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -120,17 +116,14 @@ const getApplicationById = async (req, res) => {
     const applicationId = req.params.id;
 
     const application =
-      await applicationService.getApplicationById(applicationId);
+      await applicationService.getApplicationById(applicationId, req.user);
 
     res.status(200).json({
       success: true,
       data: application,
     });
   } catch (error) {
-    res.status(404).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error, 404);
   }
 };
 
@@ -140,10 +133,8 @@ const getApplicationById = async (req, res) => {
 
 const getAssignedApplications = async (req, res) => {
   try {
-    const employeeId = req.params.employeeId;
-
     const applications =
-      await applicationService.getAssignedApplications(employeeId);
+      await applicationService.getAssignedApplications(req.user._id);
 
     res.status(200).json({
       success: true,
@@ -151,10 +142,7 @@ const getAssignedApplications = async (req, res) => {
       data: applications,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -172,10 +160,7 @@ const getAllApplications = async (req, res) => {
       data: applications,
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -191,7 +176,7 @@ const updateApplication = async (req, res) => {
 
     const updateData = req.body;
 
-    const updatedApp = await applicationService.updateApplication(
+    await applicationService.updateApplication(
       applicationId,
       studentId,
       updateData,
@@ -199,14 +184,11 @@ const updateApplication = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: updatedApp,
+      data: await applicationService.prepareApplication(applicationId, req.user),
       message: "Application updated successfully",
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -231,10 +213,7 @@ const withdrawApplication = async (req, res) => {
       message: "Application withdrawn successfully",
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
   }
 };
 
@@ -246,7 +225,7 @@ const submitApplication = async (req, res) => {
   try {
     const app = await applicationService.submitApplication(
       req.params.id,
-      req.user.id,
+      req.user,
     );
 
     res.status(200).json({
@@ -255,10 +234,16 @@ const submitApplication = async (req, res) => {
       message: "Application submitted successfully",
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message,
-    });
+    sendError(res, error);
+  }
+};
+
+const prepareApplication = async (req, res) => {
+  try {
+    const data = await applicationService.prepareApplication(req.params.id, req.user);
+    res.status(200).json({ success: true, data });
+  } catch (error) {
+    sendError(res, error);
   }
 };
 
@@ -276,4 +261,5 @@ module.exports = {
   updateApplication,
   withdrawApplication,
   submitApplication,
+  prepareApplication,
 };

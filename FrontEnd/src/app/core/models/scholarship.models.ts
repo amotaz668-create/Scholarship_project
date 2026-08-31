@@ -15,6 +15,20 @@ export interface RequiredDocument {
   required: boolean;
 }
 
+export type ApplicationRequirementType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'boolean' | 'document';
+export type ApplicationRequirementSource = 'profile' | 'application';
+
+export interface ApplicationRequirement {
+  key: string;
+  label: string;
+  labelAr?: string;
+  type: ApplicationRequirementType;
+  required: boolean;
+  options?: string[];
+  source: ApplicationRequirementSource;
+  profileField?: string;
+}
+
 export interface Scholarship {
   _id: string;
   title: string;
@@ -30,6 +44,7 @@ export interface Scholarship {
   applicationUrl?: string;
   eligibility?: EligibilityRules;
   requiredDocuments?: RequiredDocument[];
+  applicationRequirements?: ApplicationRequirement[];
   status: ScholarshipStatus;
   createdAt?: string;
   updatedAt?: string;
@@ -62,6 +77,7 @@ export interface ScholarshipPayload {
   applicationUrl?: string;
   eligibility?: EligibilityRules;
   requiredDocuments?: RequiredDocument[];
+  applicationRequirements?: ApplicationRequirement[];
   status?: ScholarshipStatus;
 }
 

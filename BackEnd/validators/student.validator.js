@@ -1,5 +1,5 @@
 const { body, validationResult } = require("express-validator");
-const { GENDER_VALUES } = require("../constants");
+const { GENDER_VALUES, DEGREE_VALUES } = require("../constants");
 
 const profileValidationRules = [
   body("phone")
@@ -29,12 +29,12 @@ const profileValidationRules = [
 
   body("degree")
     .optional()
-    .isIn(["Bachelor", "Master", "PhD"])
+    .isIn(DEGREE_VALUES)
     .withMessage("Degree must be Bachelor, Master, or PhD."),
 
   body("targetDegreeLevel")
     .optional()
-    .isIn(["Bachelor", "Master", "PhD"])
+    .isIn(DEGREE_VALUES)
     .withMessage("Target degree must be Bachelor, Master, or PhD."),
 
   body("englishLevel")

@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { GENDER_VALUES } = require("../constants");
+const { GENDER_VALUES, DEGREE_VALUES } = require("../constants");
 
 const studentProfileSchema = new mongoose.Schema(
   {
@@ -27,7 +27,7 @@ const studentProfileSchema = new mongoose.Schema(
     department: { type: String, trim: true },
     degree: {
       type: String,
-      enum: ["Bachelor", "Master", "PhD"],
+      enum: DEGREE_VALUES,
     },
     graduationYear: {
       type: Number,
@@ -43,7 +43,7 @@ const studentProfileSchema = new mongoose.Schema(
     // Study Target
     targetDegreeLevel: {
       type: String,
-      enum: ["Bachelor", "Master", "PhD"],
+      enum: DEGREE_VALUES,
     },
     preferredMajors: [{ type: String, trim: true }],
     preferredCountries: [{ type: String, trim: true }],

@@ -5,6 +5,7 @@ const {
   uploadDocument,
   getDocuments,
   getDocumentById,
+  viewDocument,
   deleteDocument,
 } = require("../controller/document.controller");
 
@@ -17,6 +18,10 @@ const { authorize } = require("../middlewares/auth.middleware");
 
 
 router.use(authenticate);
+
+// Authenticated file delivery performs ownership/assignment checks in the service.
+router.get("/:id/file", idParamRule, validate, viewDocument);
+
 router.use(authorize("student"));
 
 router.get("/", getDocuments);

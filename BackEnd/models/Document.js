@@ -15,16 +15,8 @@ const documentSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: [
-        "CV",
-        "Passport",
-        "Transcript",
-        "GraduationCertificate",
-        "RecommendationLetter",
-        "MotivationLetter",
-        "LanguageCertificate",
-        "Other",
-      ],
+      trim: true,
+      maxlength: 100,
     },
     fileName: { type: String, required: true },
     fileUrl: { type: String, required: true },

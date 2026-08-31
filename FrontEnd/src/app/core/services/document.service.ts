@@ -23,4 +23,8 @@ export class DocumentService {
   delete(id: string): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(`${environment.apiUrl}/student/documents/${id}`);
   }
+
+  view(id: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/student/documents/${id}/file`, { responseType: 'blob' });
+  }
 }

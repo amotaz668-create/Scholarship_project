@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { ReferenceItem } from '../../../../../core/models/api.models';
 import { Scholarship } from '../../../../../core/models/scholarship.models';
 import { CountryService } from '../../../../../core/services/country.service';
+import { I18nService } from '../../../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-atlas-detail-panel',
@@ -15,8 +16,8 @@ import { CountryService } from '../../../../../core/services/country.service';
       <h2>{{ scholarship().title }}</h2>
       <p>{{ refName(scholarship().university) }}</p>
       <div class="atlas-panel-grid">
-        <span><small>DEGREE</small>{{ scholarship().eligibility?.eligibleDegrees?.join(', ') || 'Open' }}</span>
-        <span><small>FUNDING</small>{{ scholarship().fundingType }}</span>
+        <span><small>DEGREE</small>{{ degreeLabel() }}</span>
+        <span><small>FUNDING</small>{{ i18n.translate(scholarship().fundingType) }}</span>
         <span><small>FIELD</small>{{ refName(scholarship().category) }}</span>
         <span><small>DEADLINE</small>{{ scholarship().deadline.slice(0, 10) }}</span>
       </div>
@@ -29,10 +30,12 @@ import { CountryService } from '../../../../../core/services/country.service';
 })
 export class AtlasDetailPanelComponent {
   readonly country = inject(CountryService);
+  readonly i18n = inject(I18nService);
   readonly scholarship = input.required<Scholarship>();
   readonly closed = output<void>();
 
   refName(value: string | ReferenceItem): string {
     return typeof value === 'string' ? 'Global' : value.name;
   }
+  degreeLabel(): string { return this.scholarship().eligibility?.eligibleDegrees?.map((degree) => this.i18n.translate(degree)).join(', ') || this.i18n.translate('Open'); }
 }

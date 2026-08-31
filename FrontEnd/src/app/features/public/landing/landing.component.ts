@@ -41,7 +41,7 @@ interface DestinationSummary { code: string; name: string; count: number; flag: 
         <div><strong>{{ totalScholarships() }}</strong><span>Scholarships</span></div>
         <div><strong>{{ countries().length }}</strong><span>Countries</span></div>
         <div><strong>{{ universities().length }}</strong><span>Universities</span></div>
-        <div><strong>—</strong><span>Successful applications <small>Protected statistic</small></span></div>
+        <div><strong>Private</strong><span>Successful applications <small>Protected statistic</small></span></div>
       </div>
     </section>
 

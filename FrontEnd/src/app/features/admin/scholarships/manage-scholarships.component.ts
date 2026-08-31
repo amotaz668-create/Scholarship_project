@@ -11,6 +11,7 @@ import { apiErrorMessage } from '../../../core/services/error-message';
 import { ScholarshipService } from '../../../core/services/scholarship.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
 import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.component';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { ScholarshipEditorComponent } from './components/scholarship-editor/scholarship-editor.component';
 
 @Component({
@@ -25,6 +26,7 @@ export class ManageScholarshipsComponent {
   readonly country = inject(CountryService);
 
   readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
   readonly scholarships = signal<Scholarship[]>([]);
   readonly categories = signal<ReferenceItem[]>([]);
   readonly countries = signal<ReferenceItem[]>([]);
@@ -108,7 +110,8 @@ export class ManageScholarshipsComponent {
   }
 
   remove(item: Scholarship): void {
-    if (!confirm(`Delete ${item.title}?`)) return;
+    const message = this.i18n.language() === 'ar' ? `حذف ${item.title}؟` : `Delete ${item.title}?`;
+    if (!confirm(message)) return;
     this.api.delete(item._id).subscribe({
       next: () => this.scholarships.update((items) => items.filter((current) => current._id !== item._id)),
       error: (error: unknown) => this.error.set(apiErrorMessage(error))

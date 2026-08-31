@@ -30,7 +30,7 @@ import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.c
       <app-stat-card label="Upcoming deadlines" [value]="upcomingDeadlines()" caption="Next 30 days" icon="◷" />
       <app-stat-card label="Unread notifications" [value]="unreadNotifications()" caption="Journey updates" icon="✦" />
       <app-stat-card label="Saved scholarships" [value]="savedCount()" caption="From your profile" icon="☆" />
-      <app-stat-card label="Match score" value="—" caption="No scoring API available" icon="◎" />
+      <app-stat-card label="Match score" value="Unavailable" caption="No scoring API available" icon="◎" />
     </section>
     <section class="section page-container dashboard-columns">
       <div><div class="section-heading split"><div><p class="eyebrow">RECENT PROGRESS</p><h2>Your active route</h2></div><a routerLink="/applications" class="text-link">All applications →</a></div>

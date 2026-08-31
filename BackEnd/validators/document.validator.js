@@ -1,22 +1,12 @@
 const { body, param, validationResult } = require("express-validator");
 
-const ALLOWED_DOC_TYPES = [
-  "CV",
-  "Passport",
-  "Transcript",
-  "GraduationCertificate",
-  "RecommendationLetter",
-  "MotivationLetter",
-  "LanguageCertificate",
-  "Other",
-];
-
 const uploadValidationRules = [
   body("type")
     .notEmpty()
     .withMessage("Document type is required.")
-    .isIn(ALLOWED_DOC_TYPES)
-    .withMessage(`Document type must be one of: ${ALLOWED_DOC_TYPES.join(", ")}.`),
+    .isString()
+    .isLength({ max: 100 })
+    .withMessage("Document type must be 100 characters or fewer."),
 ];
 
 const idParamRule = [

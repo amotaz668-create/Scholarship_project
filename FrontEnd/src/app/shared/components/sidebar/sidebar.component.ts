@@ -1,6 +1,8 @@
 import { Component, inject, input } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
+import { ThemeService } from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -31,6 +33,11 @@ import { AuthService } from '../../../core/services/auth.service';
         }
       </nav>
 
+      <div class="sidebar-preferences" aria-label="Language and theme controls">
+        <button type="button" class="nav-preference" (click)="i18n.toggleLanguage()"><span aria-hidden="true">文</span><span>{{ i18n.language() === 'en' ? 'العربية' : 'English' }}</span></button>
+        <button type="button" class="nav-preference" (click)="theme.toggle()"><span aria-hidden="true">{{ theme.theme() === 'dark' ? '☀' : '☾' }}</span><span>{{ theme.theme() === 'dark' ? 'Light' : 'Dark' }}</span></button>
+      </div>
+
       <div class="sidebar-footer">
         <div class="avatar">{{ initials(auth.currentUser()?.name ?? 'User') }}</div>
         <div><b>{{ auth.currentUser()?.name }}</b><small>{{ auth.currentUser()?.role }}</small></div>
@@ -42,6 +49,8 @@ import { AuthService } from '../../../core/services/auth.service';
 export class SidebarComponent {
   readonly role = input.required<'admin' | 'employee'>();
   readonly auth = inject(AuthService);
+  readonly i18n = inject(I18nService);
+  readonly theme = inject(ThemeService);
 
   initials(name: string): string {
     return name.split(' ').slice(0, 2).map((word) => word[0]).join('').toUpperCase();

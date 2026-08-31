@@ -49,11 +49,36 @@
         <label>Gender
           <select formControlName="gender"><option value="">Not specified</option><option>Male</option><option>Female</option></select>
         </label>
-        <label>Eligible degrees <small>comma separated</small><input formControlName="degrees" placeholder="Bachelor, Master"></label>
+        <label>Eligible degrees <small>comma separated</small><input formControlName="degrees" placeholder="Bachelor, Master, PhD"></label>
       </div>
       <label>Eligible fields <small>comma separated</small><input formControlName="fields"></label>
       <label>Required documents <small>comma separated; saved as required</small><input formControlName="documents" placeholder="CV, Transcript, Passport"></label>
-      <button class="button primary wide" type="submit" [disabled]="form.invalid || saving()">
+
+      <div class="form-section-title split"><span>Application requirements</span><button class="button ghost small" type="button" (click)="addRequirement()">Add requirement</button></div>
+      <p class="muted">Reuse profile fields when possible. Scholarship-specific questions remain in the application.</p>
+      <div class="requirement-editor-list">
+        @for (requirement of requirements(); track $index; let index = $index) {
+          <section class="requirement-editor-row">
+            <div class="form-row">
+              <label>Key<input [value]="requirement.key" (input)="updateRequirement(index, 'key', $any($event.target).value)" placeholder="motivationStatement"></label>
+              <label>English label<input [value]="requirement.label" (input)="updateRequirement(index, 'label', $any($event.target).value)"></label>
+            </div>
+            <label>Arabic label<input dir="rtl" [value]="requirement.labelAr || ''" (input)="updateRequirement(index, 'labelAr', $any($event.target).value)"></label>
+            <div class="form-row">
+              <label>Input type<select [value]="requirement.type" (change)="updateRequirement(index, 'type', $any($event.target).value)">@for (type of requirementTypes; track type) { <option [value]="type">{{ type }}</option> }</select></label>
+              <label>Source<select [value]="requirement.source" (change)="updateRequirement(index, 'source', $any($event.target).value)"><option value="application">Application</option><option value="profile">Profile</option></select></label>
+            </div>
+            @if (requirement.source === 'profile') {
+              <label>Mapped profile field<select [value]="requirement.profileField || ''" (change)="updateRequirement(index, 'profileField', $any($event.target).value)"><option value="">Select field</option>@for (field of profileFields; track field) { <option [value]="field">{{ field }}</option> }</select></label>
+            }
+            @if (requirement.type === 'select') {
+              <label>Options <small>comma separated</small><input [value]="requirement.options?.join(', ') || ''" (input)="updateRequirementOptions(index, $any($event.target).value)"></label>
+            }
+            <div class="requirement-editor-actions"><label class="check-label"><input type="checkbox" [checked]="requirement.required" (change)="updateRequirement(index, 'required', $any($event.target).checked)"> Required</label><button class="button danger small" type="button" (click)="removeRequirement(index)">Remove</button></div>
+          </section>
+        } @empty { <p class="muted">No additional application questions configured.</p> }
+      </div>
+      <button class="button primary wide" type="submit" [disabled]="form.invalid || !requirementsValid() || saving()">
         {{ saving() ? 'Saving…' : (editing() ? 'Save changes' : 'Create scholarship') }}
       </button>
     </form>

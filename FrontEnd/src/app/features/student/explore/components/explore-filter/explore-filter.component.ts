@@ -1,6 +1,7 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ReferenceItem } from '../../../../../core/models/api.models';
+import { I18nService } from '../../../../../core/i18n/i18n.service';
 
 export interface DestinationOption {
   code: string;
@@ -41,14 +42,14 @@ export interface DestinationOption {
         <label>Funding
           <select formControlName="fundingType">
             <option value="">Any funding</option>
-            @for (item of fundingTypes(); track item) { <option [value]="item">{{ item }}</option> }
+            @for (item of fundingTypes(); track item) { <option [value]="item">{{ i18n.translate(item) }}</option> }
           </select>
         </label>
         <div class="form-row">
           <label>Degree
             <select formControlName="degree">
               <option value="">Any level</option>
-              @for (item of degreeLevels(); track item) { <option [value]="item">{{ item }}</option> }
+              @for (item of degreeLevels(); track item) { <option [value]="item">{{ i18n.translate(item) }}</option> }
             </select>
           </label>
           <label>Deadline before<input type="date" formControlName="deadline"></label>
@@ -60,6 +61,7 @@ export interface DestinationOption {
   styles: [':host { display: contents; }']
 })
 export class ExploreFilterComponent {
+  readonly i18n = inject(I18nService);
   readonly form = input.required<FormGroup>();
   readonly countries = input<DestinationOption[]>([]);
   readonly universities = input<ReferenceItem[]>([]);

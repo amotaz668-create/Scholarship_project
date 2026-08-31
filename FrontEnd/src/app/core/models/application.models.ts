@@ -1,4 +1,6 @@
 import { Scholarship } from './scholarship.models';
+import { ApplicationRequirement } from './scholarship.models';
+import { StudentDocument } from './notification.models';
 
 export type ApplicationStatus =
   | 'draft'
@@ -49,12 +51,34 @@ export interface ApplicationTimelineItem {
 export interface ApplicationDocument {
   documentId?: string;
   name: string;
-  fileUrl: string;
+  type?: string;
+  fileName?: string;
+  fileUrl?: string;
+  mimeType?: string;
 }
 
 export interface ApplicationAnswer {
+  requirementKey?: string;
   question: string;
-  answer: string;
+  answer: unknown;
+}
+
+export interface MissingRequirement {
+  key: string;
+  label: string;
+  labelAr?: string;
+}
+
+export interface ApplicationMissingData {
+  profileFields: MissingRequirement[];
+  answers: MissingRequirement[];
+  documents: string[];
+}
+
+export interface ResolvedApplicationRequirement extends ApplicationRequirement {
+  value?: unknown;
+  origin: 'profile' | 'application' | 'missing';
+  missing: boolean;
 }
 
 export interface ScholarshipApplication {
@@ -65,6 +89,10 @@ export interface ScholarshipApplication {
   assignedEmployeeId?: string | null;
   documents: ApplicationDocument[];
   answers: ApplicationAnswer[];
+  profileData?: Record<string, unknown>;
+  profileSnapshot?: Record<string, unknown> | null;
+  isComplete?: boolean;
+  missing?: ApplicationMissingData;
   status: ApplicationStatus;
   timeline: ApplicationTimelineItem[];
   notes?: string;
@@ -79,4 +107,24 @@ export interface CreateApplicationPayload {
   scholarshipId: string;
   documents?: ApplicationDocument[];
   answers?: ApplicationAnswer[];
+}
+
+export interface UpdateApplicationPayload {
+  answers?: ApplicationAnswer[];
+  profileData?: Record<string, unknown>;
+  documentIds?: string[];
+  saveProfile?: boolean;
+}
+
+export interface ApplicationPreparation {
+  application: ScholarshipApplication;
+  scholarship: Scholarship;
+  profileData: Record<string, unknown>;
+  requirements: ResolvedApplicationRequirement[];
+  availableDocuments: StudentDocument[];
+  selectedDocumentIds: string[];
+  readiness: {
+    complete: boolean;
+    missing: ApplicationMissingData;
+  };
 }

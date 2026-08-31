@@ -1,112 +1,151 @@
 const Application = require("../models/application");
 const Scholarship = require("../models/scholarship");
-
+const StudentProfile = require("../models/StudentProfile");
+const Document = require("../models/Document");
+const fs = require("fs");
+const path = require("path");
+const { APPLICATION_PROFILE_FIELDS } = require("../constants");
+const { UPLOAD_DIR } = require("../middlewares/upload.middleware");
 const { createNotification } = require("./notification.service");
 
-// ==========================================
-// Create Application
-// ==========================================
+const present = (value) => value !== undefined && value !== null && value !== "";
+const plain = (value) => value?.toObject ? value.toObject() : value;
 
-const createApplication = async (studentId, scholarshipId, applicationData) => {
-  const existingApp = await Application.findOne({
-    studentId: studentId,
-    scholarshipId: scholarshipId,
-    status: { $ne: "withdrawn" },
+const fail = (message, statusCode = 400, details) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  if (details) error.details = details;
+  throw error;
+};
+
+const requirementLabel = (requirement) => ({
+  key: requirement.key,
+  label: requirement.label,
+  labelAr: requirement.labelAr || "",
+});
+
+const answerMap = (answers = []) => new Map(
+  answers.map((answer) => [answer.requirementKey || answer.question, answer.answer]),
+);
+
+const profileValues = (user, profile, overrides = {}) => ({
+  name: user?.name,
+  email: user?.email,
+  ...(plain(profile) || {}),
+  ...(plain(overrides) || {}),
+});
+
+const requiredDocumentTypes = (scholarship) => {
+  const configured = (scholarship.requiredDocuments || [])
+    .filter((document) => document.required)
+    .map((document) => document.type);
+  const dynamic = (scholarship.applicationRequirements || [])
+    .filter((requirement) => requirement.required && requirement.type === "document")
+    .map((requirement) => requirement.key);
+  return [...new Set([...configured, ...dynamic])];
+};
+
+const evaluateApplication = (application, scholarship, user, profile) => {
+  const requirements = scholarship.applicationRequirements || [];
+  const answers = answerMap(application.answers);
+  const overrides = plain(application.profileData) || {};
+  const resolvedProfile = profileValues(user, profile, overrides);
+  const selectedTypes = new Set((application.documents || []).map((document) => document.type || document.name));
+  const missing = { profileFields: [], answers: [], documents: [] };
+  const profileSnapshot = {};
+
+  const resolvedRequirements = requirements.map((requirement) => {
+    let value;
+    let origin = "missing";
+    if (requirement.type === "document") {
+      value = selectedTypes.has(requirement.key);
+      if (value) origin = "application";
+    } else if (requirement.source === "profile") {
+      value = resolvedProfile[requirement.profileField];
+      if (present(overrides[requirement.profileField])) origin = "application";
+      else if (present(value)) origin = "profile";
+      if (present(value)) profileSnapshot[requirement.profileField] = value;
+      if (requirement.required && !present(value)) missing.profileFields.push(requirementLabel(requirement));
+    } else {
+      value = answers.get(requirement.key);
+      if (present(value) || value === false) origin = "application";
+      if (requirement.required && !present(value) && value !== false) missing.answers.push(requirementLabel(requirement));
+    }
+    return { ...plain(requirement), value, origin, missing: requirement.required && origin === "missing" };
   });
 
-  if (existingApp) {
-    throw new Error(
-      "You already have an active application for this scholarship",
-    );
+  for (const type of requiredDocumentTypes(scholarship)) {
+    if (!selectedTypes.has(type)) missing.documents.push(type);
+  }
+
+  return {
+    complete: !missing.profileFields.length && !missing.answers.length && !missing.documents.length,
+    missing,
+    profileSnapshot,
+    requirements: resolvedRequirements,
+  };
+};
+
+const loadOwnedPreparation = async (applicationId, user) => {
+  const application = await Application.findOne({ _id: applicationId, studentId: user._id })
+    .populate("scholarshipId");
+  if (!application) fail("Application not found.", 404);
+
+  const [profile, availableDocuments] = await Promise.all([
+    StudentProfile.findOne({ userId: user._id }),
+    Document.find({ studentId: user._id }).sort({ uploadedAt: -1 }),
+  ]);
+  const readiness = evaluateApplication(application, application.scholarshipId, user, profile);
+  return { application, scholarship: application.scholarshipId, profile, availableDocuments, readiness };
+};
+
+const createApplication = async (studentId, scholarshipId, applicationData = {}) => {
+  const existing = await Application.findOne({ studentId, scholarshipId }).sort({ createdAt: -1 });
+  if (existing?.status === "draft") return { application: existing, reused: true };
+  if (existing && existing.status !== "withdrawn") {
+    fail("You already have an active application for this scholarship", 409);
   }
 
   const scholarship = await Scholarship.findById(scholarshipId);
+  if (!scholarship) fail("Scholarship not found", 404);
 
-  if (!scholarship) {
-    throw new Error("Scholarship not found");
-  }
-
-  const newApp = new Application({
-    studentId: studentId,
-    scholarshipId: scholarshipId,
+  const application = await Application.create({
+    studentId,
+    scholarshipId,
     scholarshipTitle: scholarship.title,
     documents: applicationData.documents || [],
     answers: applicationData.answers || [],
     status: "draft",
   });
-
-  await newApp.save();
-
-  return newApp;
+  return { application, reused: false };
 };
 
-// ==========================================
-// Update Application Status
-// ==========================================
-
-const updateApplicationStatus = async (
-  applicationId,
-  newStatus,
-  userId,
-  note = "",
-) => {
-  const application = await Application.findById(applicationId);
-
-  if (!application) {
-    throw new Error("Application not found");
-  }
-
-  const currentStatus = application.status;
-
-  if (currentStatus === newStatus) {
-    throw new Error(`Application is already in ${newStatus} status`);
-  }
+const updateApplicationStatus = async (applicationId, newStatus, user, note = "") => {
+  const filter = { _id: applicationId };
+  if (user.role === "employee") filter.assignedEmployeeId = user._id;
+  const application = await Application.findOne(filter);
+  if (!application) fail("Application not found", 404);
 
   const allowedTransitions = {
     draft: ["submitted", "withdrawn"],
-
     submitted: ["under_review", "withdrawn"],
-
     under_review: ["accepted", "rejected", "missing_documents"],
-
     missing_documents: ["under_review", "rejected"],
-
-    accepted: [],
-
-    rejected: [],
-
-    withdrawn: [],
+    accepted: [], rejected: [], withdrawn: [],
   };
-
-  if (!allowedTransitions[currentStatus].includes(newStatus)) {
-    throw new Error(
-      `Invalid transition: Cannot change status from ${currentStatus} to ${newStatus}`,
-    );
+  if (application.status === newStatus) fail(`Application is already in ${newStatus} status`);
+  if (!allowedTransitions[application.status].includes(newStatus)) {
+    fail(`Invalid transition: Cannot change status from ${application.status} to ${newStatus}`);
   }
 
-  const timelineEntry = {
-    oldStatus: currentStatus,
-    newStatus: newStatus,
-    changedBy: userId,
-    note: note,
-    date: new Date(),
-  };
-
+  const oldStatus = application.status;
   application.status = newStatus;
-
-  application.timeline.push(timelineEntry);
-
-  if (newStatus === "submitted") {
-    application.submittedAt = new Date();
-  } else if (newStatus === "accepted" || newStatus === "rejected") {
+  application.timeline.push({ oldStatus, newStatus, changedBy: user._id, note, date: new Date() });
+  if (["accepted", "rejected"].includes(newStatus)) {
     application.reviewedAt = new Date();
-
-    application.reviewedBy = userId;
+    application.reviewedBy = user._id;
   }
-
   await application.save();
-
-  // Notification للطالب
   await createNotification(
     application.studentId,
     "Application Status Updated",
@@ -114,174 +153,178 @@ const updateApplicationStatus = async (
     "APPLICATION_STATUS_CHANGED",
     application._id,
   );
-
   return application;
 };
 
-// ==========================================
-// Get Student Applications
-// ==========================================
-
-const getStudentApplications = async (studentId) => {
-  const applications = await Application.find({
-    studentId,
-  }).sort({
-    createdAt: -1,
+const getStudentApplications = async (user) => {
+  const [applications, profile] = await Promise.all([
+    Application.find({ studentId: user._id }).populate("scholarshipId").sort({ createdAt: -1 }).lean(),
+    StudentProfile.findOne({ userId: user._id }).lean(),
+  ]);
+  return applications.map((application) => {
+    const scholarship = application.scholarshipId;
+    const readiness = scholarship
+      ? evaluateApplication(application, scholarship, user, profile)
+      : { complete: false, missing: { profileFields: [], answers: [], documents: [] } };
+    return { ...application, isComplete: readiness.complete, missing: readiness.missing };
   });
-
-  return applications;
 };
 
-// ==========================================
-// Get Application By ID
-// ==========================================
+const getApplicationById = async (applicationId, user) => {
+  const filter = { _id: applicationId };
+  if (user.role === "student") filter.studentId = user._id;
+  else if (user.role === "employee") filter.assignedEmployeeId = user._id;
+  else if (user.role !== "admin") fail("Forbidden.", 403);
 
-const getApplicationById = async (applicationId) => {
-  const application =
-    await Application.findById(applicationId).populate("scholarshipId");
-
-  if (!application) {
-    throw new Error("Application not found");
-  }
-
+  const application = await Application.findOne(filter).populate("scholarshipId");
+  if (!application) fail("Application not found.", 404);
   return application;
 };
 
-// ==========================================
-// Get Assigned Applications
-// ==========================================
+const getAssignedApplications = async (employeeId) => Application.find({
+  assignedEmployeeId: employeeId,
+}).populate("scholarshipId").sort({ updatedAt: -1 });
 
-const getAssignedApplications = async (employeeId) => {
-  const applications = await Application.find({
-    assignedEmployeeId: employeeId,
-  });
+const getAllApplications = async () => Application.find({}).sort({ createdAt: -1 });
 
-  return applications;
+const prepareApplication = async (applicationId, user) => {
+  const context = await loadOwnedPreparation(applicationId, user);
+  const readiness = evaluateApplication(
+    context.application,
+    context.scholarship,
+    user,
+    context.profile,
+  );
+  return {
+    application: context.application,
+    scholarship: context.scholarship,
+    profileData: profileValues(user, context.profile, context.application.profileData),
+    requirements: readiness.requirements,
+    availableDocuments: context.availableDocuments,
+    selectedDocumentIds: context.application.documents.map((document) => String(document.documentId)),
+    readiness: {
+      complete: readiness.complete,
+      missing: readiness.missing,
+    },
+  };
 };
-
-// ==========================================
-// Get All Applications
-// ==========================================
-
-const getAllApplications = async () => {
-  const applications = await Application.find({}).sort({
-    createdAt: -1,
-  });
-
-  return applications;
-};
-
-// ==========================================
-// Update Application
-// ==========================================
 
 const updateApplication = async (applicationId, studentId, updateData) => {
-  const application = await Application.findOne({
-    _id: applicationId,
-    studentId: studentId,
-  });
+  const application = await Application.findOne({ _id: applicationId, studentId }).populate("scholarshipId");
+  if (!application) fail("Application not found or unauthorized", 404);
+  if (application.status !== "draft") fail("Only draft applications can be edited");
 
-  if (!application) {
-    throw new Error("Application not found or unauthorized");
-  }
-
-  const allowedStatusesForUpdate = ["draft", "submitted"];
-
-  if (!allowedStatusesForUpdate.includes(application.status)) {
-    throw new Error(
-      "You cannot update this application after it has entered the review stage",
-    );
-  }
-
-  if (updateData.documents) {
-    application.documents = updateData.documents;
-  }
+  const requirements = application.scholarshipId.applicationRequirements || [];
+  const requirementKeys = new Set(requirements.map((requirement) => requirement.key));
+  const profileFields = new Set(requirements
+    .filter((requirement) => requirement.source === "profile")
+    .map((requirement) => requirement.profileField));
 
   if (updateData.answers) {
-    application.answers = updateData.answers;
+    application.answers = updateData.answers.map((answer) => {
+      if (requirementKeys.size && !requirementKeys.has(answer.requirementKey)) {
+        fail(`Unknown application requirement: ${answer.requirementKey}`);
+      }
+      return {
+        requirementKey: answer.requirementKey,
+        question: answer.question,
+        answer: answer.answer,
+      };
+    });
+  }
+
+  const safeProfileData = {};
+  if (updateData.profileData) {
+    for (const [field, value] of Object.entries(updateData.profileData)) {
+      if (!APPLICATION_PROFILE_FIELDS.includes(field) || !profileFields.has(field)) {
+        fail(`Profile field is not required by this scholarship: ${field}`);
+      }
+      safeProfileData[field] = value;
+    }
+    application.profileData = safeProfileData;
+  }
+
+  if (updateData.documentIds) {
+    const uniqueIds = [...new Set(updateData.documentIds.map(String))];
+    const documents = await Document.find({ _id: { $in: uniqueIds }, studentId });
+    if (documents.length !== uniqueIds.length) fail("One or more documents are invalid or unauthorized", 403);
+    application.documents = documents.map((document) => ({
+      documentId: document._id,
+      name: document.type,
+      type: document.type,
+      fileName: document.fileName,
+      fileUrl: document.fileUrl,
+      mimeType: document.mimeType,
+    }));
+  }
+
+  if (updateData.saveProfile && Object.keys(safeProfileData).length) {
+    const reusable = Object.fromEntries(Object.entries(safeProfileData)
+      .filter(([field]) => !["name", "email"].includes(field)));
+    if (Object.keys(reusable).length) {
+      await StudentProfile.findOneAndUpdate(
+        { userId: studentId },
+        { $set: reusable, $setOnInsert: { userId: studentId } },
+        { new: true, upsert: true, runValidators: true },
+      );
+    }
   }
 
   await application.save();
-
   return application;
 };
-
-// ==========================================
-// Withdraw Application
-// ==========================================
 
 const withdrawApplication = async (applicationId, studentId) => {
-  const application = await Application.findOne({
-    _id: applicationId,
-    studentId: studentId,
-  });
-
-  if (!application) {
-    throw new Error("Application not found or unauthorized");
+  const application = await Application.findOne({ _id: applicationId, studentId });
+  if (!application) fail("Application not found or unauthorized", 404);
+  if (!["submitted", "under_review", "missing_documents"].includes(application.status)) {
+    fail(`Cannot withdraw application in ${application.status} status`);
   }
-
-  const currentStatus = application.status;
-
-  const allowedToWithdraw = ["submitted", "under_review", "missing_documents"];
-
-  if (!allowedToWithdraw.includes(currentStatus)) {
-    throw new Error(`Cannot withdraw application in ${currentStatus} status`);
-  }
-
-  const timelineEntry = {
-    oldStatus: currentStatus,
+  const oldStatus = application.status;
+  application.status = "withdrawn";
+  application.timeline.push({
+    oldStatus,
     newStatus: "withdrawn",
     changedBy: studentId,
-    note: "Student withdrawn the application",
+    note: "Student withdrew the application",
     date: new Date(),
-  };
-
-  application.status = "withdrawn";
-
-  application.timeline.push(timelineEntry);
-
+  });
   await application.save();
-
   return application;
 };
 
-// ==========================================
-// Submit Application
-// ==========================================
+const submitApplication = async (applicationId, user) => {
+  const context = await loadOwnedPreparation(applicationId, user);
+  const application = context.application;
+  if (application.status !== "draft") fail("Only draft applications can be submitted");
 
-const submitApplication = async (applicationId, studentId) => {
-  const application = await Application.findOne({
-    _id: applicationId,
-    studentId,
-  });
+  const readiness = evaluateApplication(application, context.scholarship, user, context.profile);
+  const selectedIds = application.documents.map((document) => document.documentId).filter(Boolean);
+  const storedDocuments = await Document.find({ _id: { $in: selectedIds }, studentId: user._id });
+  const validDocumentTypes = new Set(storedDocuments.filter((document) => {
+    const fileName = path.basename(String(document.fileUrl || ""));
+    return document.fileUrl === `/uploads/${fileName}` && fs.existsSync(path.resolve(UPLOAD_DIR, fileName));
+  }).map((document) => document.type));
+  readiness.missing.documents = requiredDocumentTypes(context.scholarship)
+    .filter((type) => !validDocumentTypes.has(type));
+  readiness.complete = !readiness.missing.profileFields.length
+    && !readiness.missing.answers.length
+    && !readiness.missing.documents.length;
+  if (!readiness.complete) fail("Application is incomplete.", 422, readiness.missing);
 
-  if (!application) {
-    throw new Error("Application not found");
-  }
-
-  if (application.status !== "draft") {
-    throw new Error("Only draft applications can be submitted");
-  }
-
+  application.profileSnapshot = readiness.profileSnapshot;
   application.status = "submitted";
-
   application.submittedAt = new Date();
-
   application.timeline.push({
     oldStatus: "draft",
     newStatus: "submitted",
-    changedBy: studentId,
+    changedBy: user._id,
+    note: "Student submitted the completed application",
     date: new Date(),
   });
-
   await application.save();
-
   return application;
 };
-
-// ==========================================
-// Exports
-// ==========================================
 
 module.exports = {
   createApplication,
@@ -290,7 +333,9 @@ module.exports = {
   getApplicationById,
   getAssignedApplications,
   getAllApplications,
+  prepareApplication,
   updateApplication,
   withdrawApplication,
   submitApplication,
+  evaluateApplication,
 };

@@ -7,6 +7,7 @@ import { Scholarship } from '../../../core/models/scholarship.models';
 import { ApplicationService } from '../../../core/services/application.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CountryService } from '../../../core/services/country.service';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { apiErrorMessage } from '../../../core/services/error-message';
 import { ScholarshipService } from '../../../core/services/scholarship.service';
 import { StudentService } from '../../../core/services/student.service';
@@ -26,15 +27,15 @@ import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.c
         <div class="page-container">
           <a class="back-link" routerLink="/explore">← Back to Atlas</a>
           <div class="detail-heading"><div><p class="eyebrow">{{ country.label(item.country) }} · {{ item.provider }}</p><h1>{{ item.title }}</h1><p>{{ refName(item.university) }}</p></div><div class="passport-stamp"><small>STATUS</small><app-status-badge [status]="item.status" /><b>{{ daysLeft(item.deadline) }}</b><span>DAYS LEFT</span></div></div>
-          <div class="detail-facts"><span><small>DEGREE</small>{{ item.eligibility?.eligibleDegrees?.join(', ') || 'Open level' }}</span><span><small>FIELD</small>{{ refName(item.category) }}</span><span><small>FUNDING</small>{{ item.fundingType }}</span><span><small>DEADLINE</small>{{ item.deadline | date:'mediumDate' }}</span></div>
+          <div class="detail-facts"><span><small>DEGREE</small>{{ degreeLabel(item) }}</span><span><small>FIELD</small><bdi>{{ refName(item.category) }}</bdi></span><span><small>FUNDING</small>{{ i18n.translate(item.fundingType) }}</span><span><small>DEADLINE</small>{{ item.deadline | date:'mediumDate' }}</span></div>
         </div>
       </header>
 
       <main class="detail-layout page-container">
         <div class="detail-content">
           <section class="content-card"><p class="eyebrow">01 / OVERVIEW</p><h2>About this opportunity</h2><p class="prose">{{ item.description }}</p></section>
-          <section class="content-card"><p class="eyebrow">02 / ELIGIBILITY</p><h2>Who can apply</h2><div class="requirement-grid"><div><small>Minimum GPA</small><b>{{ item.eligibility?.minGPA ?? 'Not specified' }}</b></div><div><small>Maximum age</small><b>{{ item.eligibility?.maxAge ?? 'Not specified' }}</b></div><div><small>Degrees</small><b>{{ item.eligibility?.eligibleDegrees?.join(', ') || 'Open' }}</b></div><div><small>Gender</small><b>{{ item.eligibility?.gender || 'Not specified' }}</b></div></div></section>
-          <section class="content-card"><p class="eyebrow">03 / BENEFITS & FUNDING</p><h2>Your funding package</h2><div class="benefit-banner"><span>✦</span><div><b>{{ item.fundingType }}</b><p>@if (item.amount) { {{ item.amount | number }} {{ item.currency || '' }} } @else { Exact amount is not specified by the provider. }</p></div></div></section>
+          <section class="content-card"><p class="eyebrow">02 / ELIGIBILITY</p><h2>Who can apply</h2><div class="requirement-grid"><div><small>Minimum GPA</small><b>{{ item.eligibility?.minGPA ?? 'Not specified' }}</b></div><div><small>Maximum age</small><b>{{ item.eligibility?.maxAge ?? 'Not specified' }}</b></div><div><small>Degrees</small><b>{{ degreeLabel(item, false) }}</b></div><div><small>Gender</small><b>{{ item.eligibility?.gender ? i18n.translate(item.eligibility!.gender!) : 'Not specified' }}</b></div></div></section>
+          <section class="content-card"><p class="eyebrow">03 / BENEFITS & FUNDING</p><h2>Your funding package</h2><div class="benefit-banner"><span>✦</span><div><b>{{ i18n.translate(item.fundingType) }}</b><p>@if (item.amount) { {{ item.amount | number }} {{ item.currency || '' }} } @else { Exact amount is not specified by the provider. }</p></div></div></section>
           <section class="content-card"><p class="eyebrow">04 / REQUIRED DOCUMENTS</p><h2>Pack your application</h2>@if (item.requiredDocuments?.length) { <ul class="document-checklist">@for (document of item.requiredDocuments; track document.type) { <li><span>✓</span><div><b>{{ document.type }}</b><small>{{ document.required ? 'Required' : 'Optional' }}</small></div></li> }</ul> } @else { <p class="muted">The provider has not listed required documents yet.</p> }</section>
           <section class="content-card"><p class="eyebrow">05 / APPLICATION INFORMATION</p><h2>Before departure</h2><p class="prose">Start an application inside Scholarship Atlas. It will be created as a draft so you can review it before submission.</p>@if (item.applicationUrl) { <a class="text-link" [href]="item.applicationUrl" target="_blank" rel="noopener">Visit provider website ↗</a> }</section>
         </div>
@@ -56,6 +57,7 @@ export class ScholarshipDetailsComponent {
   private readonly studentApi = inject(StudentService);
   readonly auth = inject(AuthService);
   readonly country = inject(CountryService);
+  readonly i18n = inject(I18nService);
   readonly scholarship = signal<Scholarship | null>(null);
   readonly loading = signal(true); readonly applying = signal(false); readonly error = signal(''); readonly success = signal(''); readonly favorites = signal<string[]>([]); readonly profileExists = signal(false);
   readonly saved = computed(() => this.scholarship() ? this.favorites().includes(this.scholarship()!._id) : false);
@@ -65,8 +67,9 @@ export class ScholarshipDetailsComponent {
     this.scholarshipApi.getById(id).pipe(finalize(() => this.loading.set(false))).subscribe({ next: ({ data }) => this.scholarship.set(data), error: (error: unknown) => this.error.set(apiErrorMessage(error, 'This scholarship could not be found.')) });
     if (this.auth.role() === 'student') this.studentApi.getProfile().subscribe({ next: ({ data }) => { this.profileExists.set(true); this.favorites.set((data.profile.favorites ?? []).map(String)); }, error: () => undefined });
   }
-  apply(item: Scholarship): void { this.applying.set(true); this.error.set(''); this.applicationApi.create({ scholarshipId: item._id, answers: [], documents: [] }).pipe(finalize(() => this.applying.set(false))).subscribe({ next: () => { this.success.set('Draft created. Opening My Applications…'); setTimeout(() => void this.router.navigateByUrl('/applications'), 700); }, error: (error: unknown) => this.error.set(apiErrorMessage(error, 'Could not create the application.')) }); }
+  apply(item: Scholarship): void { this.applying.set(true); this.error.set(''); this.applicationApi.create({ scholarshipId: item._id, answers: [], documents: [] }).pipe(finalize(() => this.applying.set(false))).subscribe({ next: ({ data }) => { this.success.set('Draft ready. Opening application…'); setTimeout(() => void this.router.navigate(['/applications', data._id, 'complete']), 350); }, error: (error: unknown) => this.error.set(apiErrorMessage(error, 'Could not create the application.')) }); }
   toggleFavorite(item: Scholarship): void { const next = this.saved() ? this.favorites().filter((id) => id !== item._id) : [...this.favorites(), item._id]; const request = this.profileExists() ? this.studentApi.updateProfile({ favorites: next }) : this.studentApi.createProfile({ favorites: next }); request.subscribe({ next: () => { this.profileExists.set(true); this.favorites.set(next); }, error: (error: unknown) => this.error.set(apiErrorMessage(error)) }); }
   refName(value: string | ReferenceItem): string { return typeof value === 'string' ? 'Global' : value.name; }
   daysLeft(date: string): number { return Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000)); }
+  degreeLabel(item: Scholarship, openLevel = true): string { return item.eligibility?.eligibleDegrees?.map((degree) => this.i18n.translate(degree)).join(', ') || this.i18n.translate(openLevel ? 'Open level' : 'Open'); }
 }

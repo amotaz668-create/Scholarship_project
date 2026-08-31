@@ -95,6 +95,31 @@ const validateUpdateApplication = [
     .isArray()
     .withMessage('Answers must be an array'),
 
+  body('answers.*.requirementKey')
+    .optional()
+    .isString()
+    .withMessage('Requirement key must be a string'),
+
+  body('profileData')
+    .optional()
+    .isObject()
+    .withMessage('Profile data must be an object'),
+
+  body('documentIds')
+    .optional()
+    .isArray()
+    .withMessage('Document IDs must be an array'),
+
+  body('documentIds.*')
+    .optional()
+    .isMongoId()
+    .withMessage('Invalid document ID'),
+
+  body('saveProfile')
+    .optional()
+    .isBoolean()
+    .withMessage('saveProfile must be a boolean'),
+
   handleValidationErrors // دي الفانكشن اللي بتجمع الأخطاء اللي كتبناها قبل كده
 ];
 

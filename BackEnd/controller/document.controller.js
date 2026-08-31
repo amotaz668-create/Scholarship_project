@@ -38,12 +38,22 @@ const getDocuments = async (req, res) => {
 
 const getDocumentById = async (req, res) => {
   try {
-    const doc = await documentService.getDocumentById(req.params.id, req.user._id);
+    const doc = await documentService.getDocumentById(req.params.id, req.user);
     res.status(200).json({ success: true, data: doc });
   } catch (error) {
-    const status = error.message === "Unauthorized." ? 403
-      : error.message === "Document not found." ? 404 : 500;
+    const status = error.statusCode || 500;
     res.status(status).json({ success: false, message: error.message });
+  }
+};
+
+const viewDocument = async (req, res) => {
+  try {
+    const { document, filePath } = await documentService.getDocumentFile(req.params.id, req.user);
+    res.type(document.mimeType || "application/octet-stream");
+    res.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(document.fileName)}`);
+    res.sendFile(filePath);
+  } catch (error) {
+    res.status(error.statusCode || 500).json({ success: false, message: error.message });
   }
 };
 
@@ -52,10 +62,10 @@ const deleteDocument = async (req, res) => {
     const result = await documentService.deleteDocument(req.params.id, req.user._id);
     res.status(200).json({ success: true, message: result.message });
   } catch (error) {
-    const status = error.message === "Unauthorized." ? 403
-      : error.message === "Document not found." ? 404 : 500;
+    const status = error.statusCode || (error.message === "Unauthorized." ? 403
+      : error.message === "Document not found." ? 404 : 500);
     res.status(status).json({ success: false, message: error.message });
   }
 };
 
-module.exports = { uploadDocument, getDocuments, getDocumentById, deleteDocument };
+module.exports = { uploadDocument, getDocuments, getDocumentById, viewDocument, deleteDocument };

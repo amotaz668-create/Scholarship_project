@@ -1,5 +1,11 @@
 const mongoose = require("mongoose");
-const { GENDER_VALUES, SCHOLARSHIP_STATUSES } = require("../constants");
+const {
+    GENDER_VALUES,
+    SCHOLARSHIP_STATUSES,
+    APPLICATION_REQUIREMENT_TYPES,
+    APPLICATION_REQUIREMENT_SOURCES,
+    APPLICATION_PROFILE_FIELDS
+} = require("../constants");
 
 
 const scholarshipSchema = new mongoose.Schema({
@@ -107,6 +113,18 @@ const scholarshipSchema = new mongoose.Schema({
                 type: Boolean,
                 default: true
             },
+        }
+    ],
+    applicationRequirements: [
+        {
+            key: { type: String, required: true, trim: true },
+            label: { type: String, required: true, trim: true },
+            labelAr: { type: String, trim: true },
+            type: { type: String, enum: APPLICATION_REQUIREMENT_TYPES, default: "text" },
+            required: { type: Boolean, default: true },
+            options: [{ type: String, trim: true }],
+            source: { type: String, enum: APPLICATION_REQUIREMENT_SOURCES, default: "application" },
+            profileField: { type: String, enum: APPLICATION_PROFILE_FIELDS }
         }
     ],
     status: {

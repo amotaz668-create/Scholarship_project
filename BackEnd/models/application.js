@@ -29,16 +29,30 @@ const applicationSchema = new mongoose.Schema({
     {
       documentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
       name: String,
-      fileUrl: String
+      type: String,
+      fileName: String,
+      fileUrl: String,
+      mimeType: String
     }
   ],
 
   answers: [
     {
+      requirementKey: String,
       question: String,
-      answer: String
+      answer: mongoose.Schema.Types.Mixed
     }
   ],
+
+  profileData: {
+    type: mongoose.Schema.Types.Mixed,
+    default: {}
+  },
+
+  profileSnapshot: {
+    type: mongoose.Schema.Types.Mixed,
+    default: null
+  },
 
   status: {
     type: String,

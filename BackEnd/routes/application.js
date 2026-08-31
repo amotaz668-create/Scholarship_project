@@ -34,6 +34,21 @@ router.get(
   applicationController.getStudentApplications,
 );
 
+router.get(
+  "/assigned/me",
+  authenticate,
+  authorize("employee"),
+  applicationController.getAssignedApplications,
+);
+
+router.get(
+  "/:id/prepare",
+  authenticate,
+  authorize("student"),
+  validateApplicationId,
+  applicationController.prepareApplication,
+);
+
 // Submit Application
 router.patch(
   "/:id/submit",

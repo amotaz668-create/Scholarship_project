@@ -88,9 +88,10 @@ export class AdminDashboardComponent {
   }
 
   value(key: DashboardKey): number | string {
-    if (this.dashboardLoading()) return '—';
+    if (this.dashboardLoading()) return '…';
+    if (this.dashboardError()) return 'Error';
     const current = this.dashboard()?.[key];
-    return typeof current === 'number' && Number.isFinite(current) ? current : '—';
+    return typeof current === 'number' && Number.isFinite(current) ? current : 'Error';
   }
 
   barWidth(count: number): number {

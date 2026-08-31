@@ -38,6 +38,18 @@ export const routes: Routes = [
         loadComponent: () => import('./features/student/applications/applications.component').then((m) => m.ApplicationsComponent)
       },
       {
+        path: 'applications/:id/complete',
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['student'] },
+        loadComponent: () => import('./features/student/application-complete/application-complete.component').then((m) => m.ApplicationCompleteComponent)
+      },
+      {
+        path: 'applications/:id/review',
+        canActivate: [authGuard, roleGuard],
+        data: { roles: ['student'] },
+        loadComponent: () => import('./features/student/application-review/application-review.component').then((m) => m.ApplicationReviewComponent)
+      },
+      {
         path: 'saved',
         canActivate: [authGuard, roleGuard],
         data: { roles: ['student'] },
