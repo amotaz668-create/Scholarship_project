@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'POST Country - No Auth (401)'
+order: 5000
+method: POST
+url: '{{baseUrl}}/api/countries'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "France",
+      "code": "FR"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 401", function() {
+        pm.response.to.have.status(401);
+      });

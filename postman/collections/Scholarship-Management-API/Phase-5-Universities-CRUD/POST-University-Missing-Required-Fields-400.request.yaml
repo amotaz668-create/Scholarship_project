@@ -1,0 +1,26 @@
+$kind: http-request
+name: 'POST University - Missing Required Fields (400)'
+order: 7000
+method: POST
+url: '{{baseUrl}}/api/universities'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{employeeToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Incomplete Uni"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 400", function() {
+        pm.response.to.have.status(400);
+      });

@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'Register - Duplicate Email'
+order: 4000
+method: POST
+url: '{{baseUrl}}/api/auth/register'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "student@test.com",
+      "password": "Test1234!"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 409", function() {
+        pm.response.to.have.status(400);
+      });

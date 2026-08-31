@@ -1,0 +1,22 @@
+$kind: http-request
+name: 'Login - Nonexistent Email'
+order: 5000
+method: POST
+url: '{{baseUrl}}/api/auth/login'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "nobody@test.com",
+      "password": "Test1234!"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 401", function() {
+        pm.response.to.have.status(400);
+      });

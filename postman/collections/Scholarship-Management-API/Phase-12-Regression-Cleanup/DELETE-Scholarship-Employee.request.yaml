@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'DELETE Scholarship (Employee)'
+order: 1000
+method: DELETE
+url: '{{baseUrl}}/api/scholarships/{{scholarshipId}}'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{employeeToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });

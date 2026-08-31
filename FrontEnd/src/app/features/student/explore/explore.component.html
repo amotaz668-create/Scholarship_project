@@ -1,0 +1,73 @@
+<section class="page-hero compact page-container">
+  <p class="eyebrow">SCHOLARSHIP ATLAS</p>
+  <h1>Explore opportunity <span>without borders.</span></h1>
+  <p>Search the live scholarship catalog, pick a destination, and open the route to your next degree.</p>
+</section>
+
+<section class="explore-layout page-container">
+  <app-explore-filter
+    [form]="filters"
+    [countries]="destinations()"
+    [universities]="availableUniversities()"
+    [categories]="availableCategories()"
+    [fundingTypes]="fundingTypes()"
+    [degreeLevels]="degreeLevels()"
+    (applied)="load()"
+    (cleared)="reset()"
+  />
+
+  <div class="explore-main">
+    <div class="atlas-canvas">
+      <img src="/scholarship-atlas-world-hero.png" alt="Stylized world scholarship atlas">
+      <div class="atlas-shade"></div>
+      <div class="atlas-title">
+        <span class="live-dot"></span>
+        <small>LIVE OPPORTUNITY NETWORK</small>
+        <b>{{ filteredScholarships().length }} routes found</b>
+      </div>
+
+      @for (node of countryNodes(); track node.country._id) {
+        <app-country-node
+          [node]="node"
+          [selected]="filters.controls.country.value === node.country._id"
+          (chosen)="selectCountry($event)"
+        />
+      }
+
+      @if (selectedScholarship(); as selected) {
+        <app-atlas-detail-panel
+          [scholarship]="selected"
+          (closed)="selectedScholarship.set(null)"
+        />
+      }
+    </div>
+
+    <div class="results-toolbar">
+      <div><p class="eyebrow">AVAILABLE BOARDING PASSES</p><h2>{{ filteredScholarships().length }} opportunities</h2></div>
+      <span>Data from the live backend catalog</span>
+    </div>
+
+    @if (loading()) {
+      <div class="scholarship-grid">
+        @for (item of [1, 2, 3]; track item) { <div class="skeleton card-skeleton"></div> }
+      </div>
+    } @else if (error()) {
+      <app-ui-state icon="!" title="Could not load the Atlas" [message]="error()" />
+    } @else if (!filteredScholarships().length) {
+      <app-ui-state icon="⌕" title="No scholarships found" message="Try changing your filters or explore another destination." />
+    } @else {
+      <div class="scholarship-grid">
+        @for (item of filteredScholarships(); track item._id) {
+          <div (click)="selectedScholarship.set(item)">
+            <app-scholarship-card
+              [scholarship]="item"
+              [saveEnabled]="auth.role() === 'student'"
+              [saved]="favorites().includes(item._id)"
+              (saveToggle)="toggleFavorite($event)"
+            />
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

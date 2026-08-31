@@ -1,0 +1,6 @@
+$kind: collection
+name: Scholarship Management API
+description: Complete API test suite covering Phases 1-12 for the NTI MEAN Stack Scholarship Management System
+variables:
+  - key: baseUrl
+    value: 'http://localhost:3000'

@@ -1,0 +1,15 @@
+$kind: http-request
+name: Filter by Funding Type
+order: 2000
+method: GET
+url: '{{baseUrl}}/api/scholarships'
+queryParams:
+  - key: fundingType
+    value: Full
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });

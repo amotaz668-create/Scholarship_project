@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'GET Scholarship - Nonexistent ID (404)'
+order: 9000
+method: GET
+url: '{{baseUrl}}/api/scholarships/000000000000000000000000'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 404", function() {
+        pm.response.to.have.status(404);
+      });

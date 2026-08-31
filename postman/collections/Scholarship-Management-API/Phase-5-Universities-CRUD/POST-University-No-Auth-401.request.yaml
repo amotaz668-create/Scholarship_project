@@ -1,0 +1,23 @@
+$kind: http-request
+name: 'POST University - No Auth (401)'
+order: 5000
+method: POST
+url: '{{baseUrl}}/api/universities'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Test Uni",
+      "country": "Egypt",
+      "city": "Cairo"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 401", function() {
+        pm.response.to.have.status(401);
+      });

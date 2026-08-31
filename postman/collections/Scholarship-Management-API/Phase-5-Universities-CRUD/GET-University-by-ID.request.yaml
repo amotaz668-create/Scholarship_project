@@ -1,0 +1,12 @@
+$kind: http-request
+name: GET University by ID
+order: 3000
+method: GET
+url: '{{baseUrl}}/api/universities/{{universityId}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });

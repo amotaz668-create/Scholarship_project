@@ -1,0 +1,22 @@
+$kind: http-request
+name: Pagination page 1
+order: 4000
+method: GET
+url: '{{baseUrl}}/api/scholarships'
+queryParams:
+  - key: page
+    value: '1'
+  - key: limit
+    value: '5'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Pagination page is 1 and limit is 5", function() {
+        const json = pm.response.json();
+        pm.expect(json.pagination.page).to.equal(1);
+        pm.expect(json.pagination.limit).to.equal(5);
+      });

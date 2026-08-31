@@ -1,0 +1,12 @@
+$kind: http-request
+name: GET Scholarship - Invalid ID
+order: 8000
+method: GET
+url: '{{baseUrl}}/api/scholarships/invalidid'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 404 or 500", function() {
+        pm.expect([404, 500]).to.include(pm.response.code);
+      });

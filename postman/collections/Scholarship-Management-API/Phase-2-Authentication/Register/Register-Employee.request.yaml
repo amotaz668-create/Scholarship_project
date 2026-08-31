@@ -1,0 +1,23 @@
+$kind: http-request
+name: Register Employee
+order: 2000
+method: POST
+url: '{{baseUrl}}/api/auth/register'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "employee@test.com",
+      "password": "Test1234!",
+      "role": "employee"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 201", function() {
+        pm.response.to.have.status(201);
+      });

@@ -1,0 +1,20 @@
+$kind: http-request
+name: GET Scholarship by ID
+order: 3000
+method: GET
+url: '{{baseUrl}}/api/scholarships/{{scholarshipId}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });
+      pm.test("data._id exists", function() {
+        const json = pm.response.json();
+        pm.expect(json.data).to.have.property("_id");
+      });
+      pm.test("data.title exists", function() {
+        const json = pm.response.json();
+        pm.expect(json.data).to.have.property("title");
+      });

@@ -1,0 +1,17 @@
+$kind: http-request
+name: 'DELETE Country (Employee)'
+order: 10000
+method: DELETE
+url: '{{baseUrl}}/api/countries/{{countryId}}'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{employeeToken}}'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });

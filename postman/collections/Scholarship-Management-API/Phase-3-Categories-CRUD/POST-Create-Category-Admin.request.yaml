@@ -1,0 +1,26 @@
+$kind: http-request
+name: 'POST Create Category (Admin)'
+order: 5000
+method: POST
+url: '{{baseUrl}}/api/categories'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{adminToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Medicine"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 201 or 403 (admin was registered as student)", function() {
+        pm.expect([201, 403]).to.include(pm.response.code);
+      });

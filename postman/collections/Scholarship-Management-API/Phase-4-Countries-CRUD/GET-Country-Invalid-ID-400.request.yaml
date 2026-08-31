@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'GET Country - Invalid ID (400)'
+order: 8000
+method: GET
+url: '{{baseUrl}}/api/countries/invalidid'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 400", function() {
+        pm.response.to.have.status(400);
+      });

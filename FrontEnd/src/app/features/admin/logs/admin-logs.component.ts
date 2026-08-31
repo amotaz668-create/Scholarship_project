@@ -1,0 +1,9 @@
+import { DatePipe } from '@angular/common';
+import { Component, inject, signal } from '@angular/core';
+import { AdminLog } from '../../../core/models/admin.models';
+import { AdminService } from '../../../core/services/admin.service';
+import { apiErrorMessage } from '../../../core/services/error-message';
+import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.component';
+
+@Component({ selector:'app-admin-logs', standalone:true, imports:[DatePipe,UiStateComponent], template:`<section class="management-page"><header class="page-header"><p class="eyebrow">AUDIT TRAIL</p><h1>Admin logs</h1><p>Recorded approval, rejection, deletion and deactivation events.</p></header>@if(error()){<div class="alert error">{{error()}}</div>}@if(loading()){<div class="skeleton table-skeleton"></div>}@else if(!logs().length){<app-ui-state title="No logs yet" message="Automatic admin actions will appear here." />}@else{<div class="log-timeline">@for(log of logs();track log._id){<article><span class="log-dot"></span><div class="log-card"><header><div><b>{{log.action.replaceAll('_',' ')}}</b><small>{{log.targetType}} · {{log.targetId || 'No target ID'}}</small></div><time>{{log.createdAt | date:'medium'}}</time></header><p>{{log.details}}</p><footer>Admin: {{adminEmail(log)}} <span>Log {{log._id}}</span></footer></div></article>}</div>}</section>` })
+export class AdminLogsComponent { private readonly api=inject(AdminService); readonly logs=signal<AdminLog[]>([]); readonly loading=signal(true); readonly error=signal(''); constructor(){this.api.logs().subscribe({next:({logs})=>{this.logs.set(logs);this.loading.set(false);},error:(error:unknown)=>{this.error.set(apiErrorMessage(error));this.loading.set(false);}});} adminEmail(log:AdminLog){return typeof log.adminId==='string'?log.adminId:log.adminId.email;} }

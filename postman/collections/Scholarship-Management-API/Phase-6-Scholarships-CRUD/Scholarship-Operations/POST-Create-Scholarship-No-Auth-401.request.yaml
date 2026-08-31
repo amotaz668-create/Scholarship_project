@@ -1,0 +1,21 @@
+$kind: http-request
+name: 'POST Create Scholarship - No Auth (401)'
+order: 5000
+method: POST
+url: '{{baseUrl}}/api/scholarships'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Test"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 401", function() {
+        pm.response.to.have.status(401);
+      });

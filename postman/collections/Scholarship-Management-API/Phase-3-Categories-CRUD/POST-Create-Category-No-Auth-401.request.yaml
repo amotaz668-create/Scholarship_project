@@ -1,0 +1,21 @@
+$kind: http-request
+name: 'POST Create Category - No Auth (401)'
+order: 6000
+method: POST
+url: '{{baseUrl}}/api/categories'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Test"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 401", function() {
+        pm.response.to.have.status(401);
+      });

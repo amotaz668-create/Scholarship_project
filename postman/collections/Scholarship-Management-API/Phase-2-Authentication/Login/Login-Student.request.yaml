@@ -1,0 +1,26 @@
+$kind: http-request
+name: Login Student
+order: 1000
+method: POST
+url: '{{baseUrl}}/api/auth/login'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "student@test.com",
+      "password": "Test1234!"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });
+      const json = pm.response.json();
+      if (json.token) {
+        pm.environment.set("studentToken", json.token);
+      }

@@ -1,0 +1,13 @@
+{
+  "name": "scholarship-atlas-mean",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix BackEnd install && npm --prefix FrontEnd install",
+    "dev": "node scripts/dev.js",
+    "start:backend": "npm --prefix BackEnd run dev",
+    "start:frontend": "npm --prefix FrontEnd start",
+    "verify": "npm --prefix BackEnd run check && npm --prefix FrontEnd run verify",
+    "seed:scholarships": "npm --prefix BackEnd run seed:scholarships"
+  }
+}

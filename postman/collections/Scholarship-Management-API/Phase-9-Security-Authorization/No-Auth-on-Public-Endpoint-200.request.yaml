@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'No Auth on Public Endpoint (200)'
+order: 1000
+method: GET
+url: '{{baseUrl}}/api/categories'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });

@@ -1,0 +1,52 @@
+$kind: http-request
+name: 'POST Create Scholarship (Employee)'
+order: 2000
+method: POST
+url: '{{baseUrl}}/api/scholarships'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{employeeToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "STEM Excellence Award",
+      "description": "A scholarship for outstanding STEM students worldwide",
+      "provider": "Tech Foundation",
+      "category": "{{categoryId}}",
+      "university": "{{universityId}}",
+      "country": "{{countryId}}",
+      "fundingType": "Full",
+      "amount": 10000,
+      "currency": "USD",
+      "deadline": "2027-12-31",
+      "applicationUrl": "https://example.com/apply",
+      "eligibility": {
+        "minGPA": 3.0,
+        "maxAge": 30,
+        "eligibleDegrees": ["Bachelor", "Master"],
+        "eligibleFields": ["Computer Science", "Engineering"],
+        "gender": "Any"
+      },
+      "requiredDocuments": [
+        {"type": "Transcript", "required": true},
+        {"type": "Recommendation Letter", "required": true}
+      ],
+      "status": "published"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 201", function() {
+        pm.response.to.have.status(201);
+      });
+      const json = pm.response.json();
+      if (json.data && json.data._id) {
+        pm.environment.set("scholarshipId", json.data._id);
+      }

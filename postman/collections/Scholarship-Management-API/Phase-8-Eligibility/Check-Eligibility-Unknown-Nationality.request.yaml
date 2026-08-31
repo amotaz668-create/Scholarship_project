@@ -1,0 +1,30 @@
+$kind: http-request
+name: 'Check Eligibility - Unknown Nationality'
+order: 3000
+method: POST
+url: '{{baseUrl}}/api/scholarships/check-eligibility'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "GPA": 3.5,
+      "nationality": "UnknownCountry",
+      "degree": "Bachelor",
+      "field": "Computer Science",
+      "age": 22,
+      "gender": "Male"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Data is array", function() {
+        const json = pm.response.json();
+        pm.expect(json.data).to.be.an("array");
+      });

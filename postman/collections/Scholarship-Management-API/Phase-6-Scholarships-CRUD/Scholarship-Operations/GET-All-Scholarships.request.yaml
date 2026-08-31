@@ -1,0 +1,18 @@
+$kind: http-request
+name: GET All Scholarships
+order: 1000
+method: GET
+url: '{{baseUrl}}/api/scholarships'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });
+      pm.test("Response has data array and pagination", function() {
+        const json = pm.response.json();
+        pm.expect(json).to.have.property("data");
+        pm.expect(json.data).to.be.an("array");
+        pm.expect(json).to.have.property("pagination");
+      });

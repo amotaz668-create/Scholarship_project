@@ -1,0 +1,17 @@
+$kind: http-request
+name: Pagination page 2
+order: 5000
+method: GET
+url: '{{baseUrl}}/api/scholarships'
+queryParams:
+  - key: page
+    value: '2'
+  - key: limit
+    value: '5'
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 200", function() {
+        pm.response.to.have.status(200);
+      });

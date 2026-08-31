@@ -1,0 +1,34 @@
+$kind: http-request
+name: 'Invalid Status Enum (400)'
+order: 5000
+method: POST
+url: '{{baseUrl}}/api/scholarships'
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{employeeToken}}'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "Test",
+      "description": "Test description here",
+      "provider": "Test",
+      "category": "{{categoryId}}",
+      "university": "{{universityId}}",
+      "country": "{{countryId}}",
+      "fundingType": "Full",
+      "deadline": "2027-12-31",
+      "status": "invalid_status"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 400", function() {
+        pm.response.to.have.status(400);
+      });

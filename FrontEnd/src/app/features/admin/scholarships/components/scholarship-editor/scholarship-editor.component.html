@@ -1,0 +1,61 @@
+<div class="drawer-backdrop" (click)="dismissed.emit()">
+  <aside class="editor-drawer" (click)="$event.stopPropagation()">
+    <header>
+      <div>
+        <p class="eyebrow">{{ editing() ? 'EDIT RECORD' : 'NEW OPPORTUNITY' }}</p>
+        <h2>{{ editing()?.title || 'Create scholarship' }}</h2>
+      </div>
+      <button class="panel-close labeled-close" type="button" (click)="dismissed.emit()" aria-label="Close scholarship editor"><span aria-hidden="true">×</span><span>Close</span></button>
+    </header>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      <div class="form-row">
+        <label>Title<input formControlName="title"></label>
+        <label>Provider<input formControlName="provider"></label>
+      </div>
+      <label>Description<textarea rows="4" formControlName="description"></textarea></label>
+      <div class="form-row">
+        <label>Category
+          <select formControlName="category"><option value="">Select</option>@for (item of categories(); track item._id) { <option [value]="item._id">{{ item.name }}</option> }</select>
+        </label>
+        <label>University
+          <select formControlName="university"><option value="">Select</option>@for (item of universities(); track item._id) { <option [value]="item._id">{{ item.name }}</option> }</select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Country
+          <select formControlName="country"><option value="">Select</option>@for (item of countries(); track item._id) { <option [value]="item._id">{{ item.name }}</option> }</select>
+        </label>
+        <label>Funding type<input formControlName="fundingType" placeholder="Fully Funded"></label>
+      </div>
+      <div class="form-row">
+        <label>Amount<input type="number" min="0" formControlName="amount"></label>
+        <label>Currency<input formControlName="currency" placeholder="USD"></label>
+      </div>
+      <div class="form-row">
+        <label>Deadline<input type="date" formControlName="deadline"></label>
+        <label>Status
+          <select formControlName="status"><option value="draft">Draft</option><option value="published">Published</option><option value="closed">Closed</option></select>
+        </label>
+      </div>
+      <label>Application URL<input type="url" formControlName="applicationUrl"></label>
+
+      <h3 class="form-section-title">Eligibility</h3>
+      <div class="form-row">
+        <label>Minimum GPA<input type="number" min="0" max="4" step="0.1" formControlName="minGPA"></label>
+        <label>Maximum age<input type="number" min="0" max="100" formControlName="maxAge"></label>
+      </div>
+      <div class="form-row">
+        <label>Gender
+          <select formControlName="gender"><option value="">Not specified</option><option>Male</option><option>Female</option></select>
+        </label>
+        <label>Eligible degrees <small>comma separated</small><input formControlName="degrees" placeholder="Bachelor, Master"></label>
+      </div>
+      <label>Eligible fields <small>comma separated</small><input formControlName="fields"></label>
+      <label>Required documents <small>comma separated; saved as required</small><input formControlName="documents" placeholder="CV, Transcript, Passport"></label>
+      <button class="button primary wide" type="submit" [disabled]="form.invalid || saving()">
+        {{ saving() ? 'Saving…' : (editing() ? 'Save changes' : 'Create scholarship') }}
+      </button>
+    </form>
+  </aside>
+</div>

@@ -1,0 +1,29 @@
+$kind: http-request
+name: 'Register Admin (blocked - becomes student)'
+order: 3000
+method: POST
+url: '{{baseUrl}}/api/auth/register'
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "admin@test.com",
+      "password": "Test1234!",
+      "role": "admin"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status is 201", function() {
+        pm.response.to.have.status(201);
+      });
+      pm.test("Admin role blocked - role should be student", function() {
+        const json = pm.response.json();
+        if (json.data && json.data.role) {
+          pm.expect(json.data.role).to.equal("student");
+        }
+      });
