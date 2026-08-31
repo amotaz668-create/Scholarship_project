@@ -9,8 +9,8 @@
   </header>
 
   <div class="toolbar">
-    <input [(ngModel)]="search" placeholder="Search title or provider">
-    <select [(ngModel)]="status" (ngModelChange)="onStatusChange($event)">
+    <input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Search title or provider">
+    <select [ngModel]="status()" (ngModelChange)="onStatusChange($event)">
       <option value="">All statuses</option>
       <option value="draft">Draft</option>
       <option value="published">Published</option>
@@ -32,7 +32,7 @@
           @for (item of filtered(); track item._id) {
             <tr>
               <td><b>{{ item.title }}</b><small>{{ item.provider }}</small></td>
-              <td>{{ refName(item.country) }}<small>{{ refName(item.university) }}</small></td>
+              <td>{{ country.label(item.country) }}<small>{{ refName(item.university) }}</small></td>
               <td>{{ item.fundingType }}</td>
               <td>{{ item.deadline | date:'mediumDate' }}</td>
               <td><app-status-badge [status]="item.status" /></td>

@@ -12,27 +12,22 @@
     [categories]="availableCategories()"
     [fundingTypes]="fundingTypes()"
     [degreeLevels]="degreeLevels()"
-    (applied)="load()"
+    (applied)="applyFilters()"
     (cleared)="reset()"
   />
 
   <div class="explore-main">
     <div class="atlas-canvas">
-      <img src="/scholarship-atlas-world-hero.png" alt="Stylized world scholarship atlas">
-      <div class="atlas-shade"></div>
+      <app-world-map
+        [countries]="mapCountries()"
+        [selectedCode]="selectedCountryCode()"
+        (countryChosen)="selectCountry($event)"
+      />
       <div class="atlas-title">
         <span class="live-dot"></span>
         <small>LIVE OPPORTUNITY NETWORK</small>
         <b>{{ filteredScholarships().length }} routes found</b>
       </div>
-
-      @for (node of countryNodes(); track node.country._id) {
-        <app-country-node
-          [node]="node"
-          [selected]="filters.controls.country.value === node.country._id"
-          (chosen)="selectCountry($event)"
-        />
-      }
 
       @if (selectedScholarship(); as selected) {
         <app-atlas-detail-panel
@@ -42,7 +37,7 @@
       }
     </div>
 
-    <div class="results-toolbar">
+    <div class="results-toolbar" id="opportunity-results">
       <div><p class="eyebrow">AVAILABLE BOARDING PASSES</p><h2>{{ filteredScholarships().length }} opportunities</h2></div>
       <span>Data from the live backend catalog</span>
     </div>

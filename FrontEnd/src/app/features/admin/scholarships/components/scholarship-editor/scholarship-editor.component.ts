@@ -2,6 +2,7 @@ import { Component, effect, inject, input, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ReferenceItem } from '../../../../../core/models/api.models';
 import { Scholarship, ScholarshipPayload } from '../../../../../core/models/scholarship.models';
+import { CountryService } from '../../../../../core/services/country.service';
 
 @Component({
   selector: 'app-scholarship-editor',
@@ -11,6 +12,7 @@ import { Scholarship, ScholarshipPayload } from '../../../../../core/models/scho
 })
 export class ScholarshipEditorComponent {
   private readonly fb = inject(FormBuilder);
+  readonly countryMetadata = inject(CountryService);
 
   readonly editing = input<Scholarship | null>(null);
   readonly categories = input<ReferenceItem[]>([]);

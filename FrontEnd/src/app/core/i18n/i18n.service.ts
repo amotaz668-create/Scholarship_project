@@ -463,6 +463,43 @@ const translations: Record<string, string> = {
   'Great Britain':'بريطانيا العظمى',
   'Korea Republic of':'جمهورية كوريا',
   'Democratic People’s Republic of Korea':'جمهورية كوريا الشعبية الديمقراطية',
+  'Application status filter':'فلتر حالة الطلب',
+  'Applications matching these filters will appear here.':'ستظهر هنا الطلبات المطابقة لهذه الفلاتر.',
+  'Application data unavailable':'بيانات الطلبات غير متاحة',
+  'Activity unavailable':'النشاط غير متاح',
+  'Could not load dashboard totals.':'تعذر تحميل إجماليات لوحة التحكم.',
+  'Could not load application statistics.':'تعذر تحميل إحصاءات الطلبات.',
+  'Could not load recent activity.':'تعذر تحميل النشاط الأخير.',
+  'Interactive scholarship world map':'خريطة عالمية تفاعلية للمنح الدراسية',
+  'Add a note for':'أضف ملاحظة لـ',
+  'Application moved to':'تم نقل الطلب إلى',
+  'Save':'حفظ',
+  'Destination pending':'الوجهة قيد التحديد',
+  'ACCOUNT':'الحساب',
+  'PASSPORT':'جواز الفرص',
+  'OPPORTUNITY':'الفرصة',
+  'DEADLINE':'الموعد النهائي',
+  'DEGREE':'الدرجة العلمية',
+  'EXPLORE · APPLY · STUDY':'استكشف · قدّم · ادرس',
+  'Keep promising opportunities close while you decide where to go next.':'احتفظ بالفرص الواعدة بالقرب منك أثناء اختيار وجهتك التالية.',
+  'Create a draft application, then submit it from My Applications when it is complete.':'أنشئ مسودة طلب، ثم أرسلها من صفحة طلباتي عند اكتمالها.',
+  'Applications are available to student accounts.':'التقديم متاح لحسابات الطلاب.',
+  'Applications per employee':'الطلبات لكل موظف',
+  'The service contains assignment logic, but the current routes do not expose an employee list or assignment endpoint. This frontend therefore offers secure lookup by application ID and does not invent a route.':'تحتوي الخدمة على منطق الإسناد، لكن المسارات الحالية لا توفر قائمة طلبات الموظف أو نقطة نهاية للإسناد. لذلك تتيح الواجهة بحثاً آمناً بمعرّف الطلب دون اختراع مسار غير موجود.',
+  'Scholarship Atlas home':'الصفحة الرئيسية لأطلس المنح',
+  '(leave blank to keep current)':'(اتركه فارغاً للإبقاء على القيمة الحالية)',
+  'Bachelor, Master':'بكالوريوس، ماجستير',
+  'Under Review':'قيد المراجعة',
+  'Missing Documents':'مستندات ناقصة',
+  'Withdrawn':'منسحب',
+  'Could not load scholarship reference data.':'تعذر تحميل البيانات المرجعية للمنح.',
+  'Creating draft…':'جارٍ إنشاء المسودة…',
+  'APPLICATION PIPELINE':'مسار الطلبات',
+  'DEGREE DISTRIBUTION':'توزيع الدرجات العلمية',
+  'Scholarships by degree':'المنح حسب الدرجة العلمية',
+  'Good morning':'صباح الخير',
+  'Good afternoon':'مساء الخير',
+  'Good evening':'مساء الخير',
 };
 
 const phraseKeys = Object.keys(translations).sort((a, b) => b.length - a.length);
@@ -471,7 +508,9 @@ const phraseKeys = Object.keys(translations).sort((a, b) => b.length - a.length)
 export class I18nService {
   readonly language = signal<Language>(this.readLanguage());
   private readonly originalText = new WeakMap<Text, string>();
+  private readonly lastRenderedText = new WeakMap<Text, string>();
   private readonly originalAttributes = new WeakMap<HTMLElement, Record<string, string | null>>();
+  private readonly lastRenderedAttributes = new WeakMap<HTMLElement, Record<string, string | null>>();
   private observer?: MutationObserver;
   private translating = false;
 
@@ -560,13 +599,13 @@ export class I18nService {
     if (!parent || ['SCRIPT', 'STYLE', 'NOSCRIPT'].includes(parent.tagName)) return;
 
     const current = textNode.textContent ?? '';
-    const stored = this.originalText.get(textNode);
-    let original = stored;
-    const storedRendered = stored ? this.renderTranslation(stored) : undefined;
+    let original = this.originalText.get(textNode);
+    const lastRendered = this.lastRenderedText.get(textNode);
 
-    // Angular can update an existing text node when an API value changes. Detect that
-    // and refresh the English source instead of translating an obsolete value.
-    if (!stored || (this.language() === 'ar' && current !== storedRendered && current.trim() !== this.renderTranslation(current).trim())) {
+    // If Angular changed an existing node, its current value differs from the last
+    // value written by this service. Refresh the source in either language. During a
+    // language switch current still equals lastRendered, so the source is preserved.
+    if (original === undefined || (lastRendered !== undefined && current !== lastRendered)) {
       original = current;
       this.originalText.set(textNode, original);
     }
@@ -574,6 +613,7 @@ export class I18nService {
 
     const next = this.renderTranslation(original);
     if (current !== next) textNode.textContent = next;
+    this.lastRenderedText.set(textNode, next);
   }
 
   private renderTranslation(original: string): string {
@@ -588,13 +628,18 @@ export class I18nService {
       const values: Record<string, string | null> = {};
       for (const attr of ['placeholder', 'title', 'aria-label']) values[attr] = element.getAttribute(attr);
       this.originalAttributes.set(element, values);
+      this.lastRenderedAttributes.set(element, { ...values });
     }
     const originals = this.originalAttributes.get(element)!;
+    const rendered = this.lastRenderedAttributes.get(element)!;
     for (const attr of ['placeholder', 'title', 'aria-label']) {
+      const current = element.getAttribute(attr);
+      if (rendered[attr] !== current) originals[attr] = current;
       const value = originals[attr];
       if (value == null) continue;
       const next = this.language() === 'ar' ? this.translate(value) : value;
-      if (element.getAttribute(attr) !== next) element.setAttribute(attr, next);
+      if (current !== next) element.setAttribute(attr, next);
+      rendered[attr] = next;
     }
   }
 

@@ -7,6 +7,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Explore scholarships worldwide, build your Opportunity Passport, and track your journey.">
     <meta name="theme-color" content="#07101f">
+    <script>
+      try {
+        const theme = localStorage.getItem('scholarship-atlas-theme') === 'light' ? 'light' : 'dark';
+        const language = localStorage.getItem('scholarship-atlas-language') === 'ar' ? 'ar' : 'en';
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.language = language;
+        document.documentElement.style.colorScheme = theme;
+        document.documentElement.lang = language;
+        document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+      } catch {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    </script>
   </head>
   <body>
     <app-root></app-root>

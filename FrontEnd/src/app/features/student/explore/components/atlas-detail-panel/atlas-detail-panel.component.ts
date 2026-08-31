@@ -1,7 +1,8 @@
-import { Component, input, output } from '@angular/core';
+import { Component, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ReferenceItem } from '../../../../../core/models/api.models';
 import { Scholarship } from '../../../../../core/models/scholarship.models';
+import { CountryService } from '../../../../../core/services/country.service';
 
 @Component({
   selector: 'app-atlas-detail-panel',
@@ -10,7 +11,7 @@ import { Scholarship } from '../../../../../core/models/scholarship.models';
   template: `
     <aside class="atlas-panel">
       <button class="panel-close labeled-close" type="button" (click)="closed.emit()" aria-label="Close scholarship details"><span aria-hidden="true">×</span><span>Close</span></button>
-      <p class="eyebrow">{{ refName(scholarship().country) }}</p>
+      <p class="eyebrow">{{ country.label(scholarship().country) }}</p>
       <h2>{{ scholarship().title }}</h2>
       <p>{{ refName(scholarship().university) }}</p>
       <div class="atlas-panel-grid">
@@ -27,6 +28,7 @@ import { Scholarship } from '../../../../../core/models/scholarship.models';
   styles: [':host { display: contents; }']
 })
 export class AtlasDetailPanelComponent {
+  readonly country = inject(CountryService);
   readonly scholarship = input.required<Scholarship>();
   readonly closed = output<void>();
 

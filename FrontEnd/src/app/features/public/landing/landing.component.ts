@@ -6,10 +6,11 @@ import { Scholarship } from '../../../core/models/scholarship.models';
 import { ReferenceItem } from '../../../core/models/api.models';
 import { ScholarshipService } from '../../../core/services/scholarship.service';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { CountryService } from '../../../core/services/country.service';
 import { ScholarshipCardComponent } from '../../../shared/components/scholarship-card/scholarship-card.component';
 import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.component';
 
-interface DestinationSummary { name: string; count: number; flag: string; }
+interface DestinationSummary { code: string; name: string; count: number; flag: string; }
 
 @Component({
   selector: 'app-landing',
@@ -50,8 +51,8 @@ interface DestinationSummary { name: string; count: number; flag: string; }
         <div class="destination-grid skeleton-grid">@for (item of [1,2,3,4]; track item) { <div class="skeleton card-skeleton"></div> }</div>
       } @else if (destinations().length) {
         <div class="destination-grid">
-          @for (destination of destinations(); track destination.name; let index = $index) {
-            <button class="destination-card" type="button" [style.--index]="index" (click)="openCountry(destination.name)">
+          @for (destination of destinations(); track destination.code; let index = $index) {
+            <button class="destination-card" type="button" [style.--index]="index" (click)="openCountry(destination.code)">
               <span class="destination-flag">{{ destination.flag }}</span><small>DESTINATION 0{{ index + 1 }}</small>
               <h3>{{ destination.name }}</h3><p>{{ destination.count }} available {{ destination.count === 1 ? 'scholarship' : 'scholarships' }}</p><b>Explore →</b>
             </button>
@@ -81,6 +82,7 @@ export class LandingComponent {
   private readonly scholarshipsApi = inject(ScholarshipService);
   private readonly catalogApi = inject(CatalogService);
   private readonly router = inject(Router);
+  private readonly country = inject(CountryService);
   readonly search = new FormControl('', { nonNullable: true });
   readonly loading = signal(true);
   readonly error = signal('');
@@ -89,12 +91,14 @@ export class LandingComponent {
   readonly universities = signal<ReferenceItem[]>([]);
   readonly totalScholarships = signal(0);
   readonly destinations = computed<DestinationSummary[]>(() => {
-    const counts = new Map<string, number>();
+    const counts = new Map<string, DestinationSummary>();
     this.scholarships().forEach((item) => {
-      const country = typeof item.country === 'string' ? '' : item.country.name;
-      if (country) counts.set(country, (counts.get(country) ?? 0) + 1);
+      const metadata = this.country.metadata(item.country);
+      if (!metadata) return;
+      const current = counts.get(metadata.code);
+      counts.set(metadata.code, { ...metadata, count: (current?.count ?? 0) + 1 });
     });
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([name, count]) => ({ name, count, flag: this.flagFor(name) }));
+    return [...counts.values()].sort((a, b) => b.count - a.count).slice(0, 6);
   });
 
   constructor() {
@@ -114,13 +118,7 @@ export class LandingComponent {
     void this.router.navigate(['/explore'], { queryParams: this.search.value ? { search: this.search.value } : {} });
   }
 
-  openCountry(name: string): void {
-    const country = this.countries().find((item) => item.name === name);
-    void this.router.navigate(['/explore'], { queryParams: country ? { country: country._id } : { search: name } });
-  }
-
-  private flagFor(country: string): string {
-    const flags: Record<string, string> = { Germany: '🇩🇪', Russia: '🇷🇺', Turkey: '🇹🇷', Türkiye: '🇹🇷', Canada: '🇨🇦', Romania: '🇷🇴', 'Saudi Arabia': '🇸🇦', Egypt: '🇪🇬' };
-    return flags[country] ?? '◎';
+  openCountry(code: string): void {
+    void this.router.navigate(['/explore'], { queryParams: { country: code } });
   }
 }

@@ -6,6 +6,7 @@ import { ScholarshipStatus } from '../../../core/models/constants';
 import { Scholarship, ScholarshipPayload } from '../../../core/models/scholarship.models';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { CountryService } from '../../../core/services/country.service';
 import { apiErrorMessage } from '../../../core/services/error-message';
 import { ScholarshipService } from '../../../core/services/scholarship.service';
 import { StatusBadgeComponent } from '../../../shared/components/status-badge/status-badge.component';
@@ -21,6 +22,7 @@ import { ScholarshipEditorComponent } from './components/scholarship-editor/scho
 export class ManageScholarshipsComponent {
   private readonly api = inject(ScholarshipService);
   private readonly catalogsApi = inject(CatalogService);
+  readonly country = inject(CountryService);
 
   readonly auth = inject(AuthService);
   readonly scholarships = signal<Scholarship[]>([]);
@@ -32,12 +34,12 @@ export class ManageScholarshipsComponent {
   readonly error = signal('');
   readonly editorOpen = signal(false);
   readonly editing = signal<Scholarship | null>(null);
-  search = '';
-  status = '';
+  readonly search = signal('');
+  readonly status = signal<ScholarshipStatus | ''>('');
 
   readonly filtered = computed(() => this.scholarships().filter((item) =>
-    (!this.status || item.status === this.status) &&
-    (!this.search || `${item.title} ${item.provider}`.toLowerCase().includes(this.search.toLowerCase()))
+    (!this.status() || item.status === this.status()) &&
+    (!this.search() || `${item.title} ${item.provider}`.toLowerCase().includes(this.search().toLowerCase()))
   ));
 
   constructor() {
@@ -53,13 +55,13 @@ export class ManageScholarshipsComponent {
   }
 
   onStatusChange(status: string): void {
-    this.status = status as typeof this.status;
+    this.status.set(status as ScholarshipStatus | '');
     this.reload();
   }
 
   reload(): void {
     this.loading.set(true);
-    this.api.list({ limit: 100, status: this.status ? this.status as ScholarshipStatus : undefined }).subscribe({
+    this.api.list({ limit: 100, status: this.status() || undefined }).subscribe({
       next: ({ data }) => {
         this.scholarships.set(data);
         this.loading.set(false);

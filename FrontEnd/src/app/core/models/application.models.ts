@@ -9,6 +9,35 @@ export type ApplicationStatus =
   | 'rejected'
   | 'withdrawn';
 
+export const APPLICATION_STATUSES: readonly ApplicationStatus[] = [
+  'draft',
+  'submitted',
+  'under_review',
+  'missing_documents',
+  'accepted',
+  'rejected',
+  'withdrawn'
+];
+
+// Staff targets are restricted by validateUpdateStatus on the backend. These
+// transitions are the intersection of that validator and the service workflow.
+export const STAFF_APPLICATION_TRANSITIONS: Readonly<Record<ApplicationStatus, readonly ApplicationStatus[]>> = {
+  draft: [],
+  submitted: ['under_review'],
+  under_review: ['accepted', 'rejected', 'missing_documents'],
+  missing_documents: ['under_review', 'rejected'],
+  accepted: [],
+  rejected: [],
+  withdrawn: []
+};
+
+export function applicationStatusText(status: ApplicationStatus | string): string {
+  return status
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export interface ApplicationTimelineItem {
   oldStatus?: ApplicationStatus;
   newStatus: ApplicationStatus;

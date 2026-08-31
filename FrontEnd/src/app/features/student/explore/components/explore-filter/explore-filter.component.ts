@@ -2,6 +2,12 @@ import { Component, input, output } from '@angular/core';
 import { FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ReferenceItem } from '../../../../../core/models/api.models';
 
+export interface DestinationOption {
+  code: string;
+  name: string;
+  flag: string;
+}
+
 @Component({
   selector: 'app-explore-filter',
   standalone: true,
@@ -17,7 +23,7 @@ import { ReferenceItem } from '../../../../../core/models/api.models';
         <label>Country
           <select formControlName="country">
             <option value="">All destinations</option>
-            @for (item of countries(); track item._id) { <option [value]="item._id">{{ item.name }}</option> }
+            @for (item of countries(); track item.code) { <option [value]="item.code">{{ item.flag }} {{ item.name }}</option> }
           </select>
         </label>
         <label>University
@@ -55,7 +61,7 @@ import { ReferenceItem } from '../../../../../core/models/api.models';
 })
 export class ExploreFilterComponent {
   readonly form = input.required<FormGroup>();
-  readonly countries = input<ReferenceItem[]>([]);
+  readonly countries = input<DestinationOption[]>([]);
   readonly universities = input<ReferenceItem[]>([]);
   readonly categories = input<ReferenceItem[]>([]);
   readonly fundingTypes = input<string[]>([]);

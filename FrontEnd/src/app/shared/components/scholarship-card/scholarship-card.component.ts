@@ -1,8 +1,9 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, inject, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Scholarship } from '../../../core/models/scholarship.models';
 import { ReferenceItem } from '../../../core/models/api.models';
 import { StatusBadgeComponent } from '../status-badge/status-badge.component';
+import { CountryService } from '../../../core/services/country.service';
 
 @Component({
   selector: 'app-scholarship-card',
@@ -11,7 +12,7 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
   template: `
     <article class="boarding-card">
       <div class="boarding-topline">
-        <span class="country-code">{{ countryName() }}</span>
+        <span class="country-code">{{ countryLabel() }}</span>
         <span class="ticket-number">SA / {{ scholarship()._id.slice(-5).toUpperCase() }}</span>
       </div>
       <div class="boarding-body">
@@ -44,11 +45,12 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
   `
 })
 export class ScholarshipCardComponent {
+  private readonly country = inject(CountryService);
   readonly scholarship = input.required<Scholarship>();
   readonly saveEnabled = input(false);
   readonly saved = input(false);
   readonly saveToggle = output<Scholarship>();
-  readonly countryName = computed(() => this.refName(this.scholarship().country, 'Destination pending'));
+  readonly countryLabel = computed(() => this.country.label(this.scholarship().country) || 'Destination pending');
   readonly universityName = computed(() => this.refName(this.scholarship().university, 'Multiple institutions'));
   readonly deadlineDay = computed(() => new Date(this.scholarship().deadline).toLocaleDateString('en', { day: '2-digit' }));
   readonly deadlineMonth = computed(() => new Date(this.scholarship().deadline).toLocaleDateString('en', { month: 'short' }).toUpperCase());

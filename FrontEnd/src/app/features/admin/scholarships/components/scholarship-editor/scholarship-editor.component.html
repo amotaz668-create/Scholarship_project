@@ -24,7 +24,7 @@
       </div>
       <div class="form-row">
         <label>Country
-          <select formControlName="country"><option value="">Select</option>@for (item of countries(); track item._id) { <option [value]="item._id">{{ item.name }}</option> }</select>
+          <select formControlName="country"><option value="">Select</option>@for (item of countries(); track item._id) { <option [value]="item._id">{{ countryMetadata.label(item) }}</option> }</select>
         </label>
         <label>Funding type<input formControlName="fundingType" placeholder="Fully Funded"></label>
       </div>

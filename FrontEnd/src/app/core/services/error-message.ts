@@ -3,6 +3,9 @@ import { ApiFailure } from '../models/api.models';
 
 export function apiErrorMessage(error: unknown, fallback = 'Something went wrong. Please try again.'): string {
   if (!(error instanceof HttpErrorResponse)) return fallback;
+  // Browser/network errors can expose implementation strings such as
+  // "Failed to fetch". Use the page's translated, user-friendly fallback.
+  if (error.status === 0) return fallback;
   const body = error.error as ApiFailure | string | null;
   if (typeof body === 'string' && body.trim()) return body;
   if (body && typeof body === 'object') {

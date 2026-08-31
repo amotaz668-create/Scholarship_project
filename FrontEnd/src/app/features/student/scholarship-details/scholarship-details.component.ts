@@ -6,6 +6,7 @@ import { ReferenceItem } from '../../../core/models/api.models';
 import { Scholarship } from '../../../core/models/scholarship.models';
 import { ApplicationService } from '../../../core/services/application.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { CountryService } from '../../../core/services/country.service';
 import { apiErrorMessage } from '../../../core/services/error-message';
 import { ScholarshipService } from '../../../core/services/scholarship.service';
 import { StudentService } from '../../../core/services/student.service';
@@ -24,7 +25,7 @@ import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.c
         <div class="detail-orbit"></div>
         <div class="page-container">
           <a class="back-link" routerLink="/explore">← Back to Atlas</a>
-          <div class="detail-heading"><div><p class="eyebrow">{{ refName(item.country) }} · {{ item.provider }}</p><h1>{{ item.title }}</h1><p>{{ refName(item.university) }}</p></div><div class="passport-stamp"><small>STATUS</small><app-status-badge [status]="item.status" /><b>{{ daysLeft(item.deadline) }}</b><span>DAYS LEFT</span></div></div>
+          <div class="detail-heading"><div><p class="eyebrow">{{ country.label(item.country) }} · {{ item.provider }}</p><h1>{{ item.title }}</h1><p>{{ refName(item.university) }}</p></div><div class="passport-stamp"><small>STATUS</small><app-status-badge [status]="item.status" /><b>{{ daysLeft(item.deadline) }}</b><span>DAYS LEFT</span></div></div>
           <div class="detail-facts"><span><small>DEGREE</small>{{ item.eligibility?.eligibleDegrees?.join(', ') || 'Open level' }}</span><span><small>FIELD</small>{{ refName(item.category) }}</span><span><small>FUNDING</small>{{ item.fundingType }}</span><span><small>DEADLINE</small>{{ item.deadline | date:'mediumDate' }}</span></div>
         </div>
       </header>
@@ -54,6 +55,7 @@ export class ScholarshipDetailsComponent {
   private readonly applicationApi = inject(ApplicationService);
   private readonly studentApi = inject(StudentService);
   readonly auth = inject(AuthService);
+  readonly country = inject(CountryService);
   readonly scholarship = signal<Scholarship | null>(null);
   readonly loading = signal(true); readonly applying = signal(false); readonly error = signal(''); readonly success = signal(''); readonly favorites = signal<string[]>([]); readonly profileExists = signal(false);
   readonly saved = computed(() => this.scholarship() ? this.favorites().includes(this.scholarship()!._id) : false);

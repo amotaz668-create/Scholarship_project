@@ -1,44 +1,44 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { forkJoin } from 'rxjs';
 import { ReferenceItem } from '../../../core/models/api.models';
 import { Scholarship } from '../../../core/models/scholarship.models';
-import {
-  countryCoordinates,
-  normalizeCountryName,
-  webMercatorPosition
-} from '../../../core/utils/country-geography';
+import { I18nService } from '../../../core/i18n/i18n.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { CatalogService } from '../../../core/services/catalog.service';
+import { CountryService } from '../../../core/services/country.service';
 import { apiErrorMessage } from '../../../core/services/error-message';
 import { ScholarshipService } from '../../../core/services/scholarship.service';
 import { StudentService } from '../../../core/services/student.service';
 import { ScholarshipCardComponent } from '../../../shared/components/scholarship-card/scholarship-card.component';
 import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.component';
 import { AtlasDetailPanelComponent } from './components/atlas-detail-panel/atlas-detail-panel.component';
-import { CountryNode, CountryNodeComponent } from './components/country-node/country-node.component';
-import { ExploreFilterComponent } from './components/explore-filter/explore-filter.component';
+import { DestinationOption, ExploreFilterComponent } from './components/explore-filter/explore-filter.component';
+import { MapCountryData, WorldMapComponent } from './components/world-map/world-map.component';
 
 @Component({
   selector: 'app-explore',
   standalone: true,
   imports: [
     AtlasDetailPanelComponent,
-    CountryNodeComponent,
     ExploreFilterComponent,
     ScholarshipCardComponent,
-    UiStateComponent
+    UiStateComponent,
+    WorldMapComponent
   ],
   templateUrl: './explore.component.html'
 })
 export class ExploreComponent {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly scholarshipApi = inject(ScholarshipService);
   private readonly catalogApi = inject(CatalogService);
   private readonly studentApi = inject(StudentService);
+  private readonly country = inject(CountryService);
+  private readonly i18n = inject(I18nService);
 
   readonly auth = inject(AuthService);
   readonly loading = signal(true);
@@ -69,17 +69,12 @@ export class ExploreComponent {
     const filters = this.filterValues();
     const search = filters.search?.trim().toLocaleLowerCase() ?? '';
     const deadline = filters.deadline ? new Date(`${filters.deadline}T23:59:59`) : null;
-    const selectedCountry = filters.country
-      ? this.countries().find((item) => item._id === filters.country)
-        ?? this.destinations().find((item) => item._id === filters.country)
-      : null;
+    const selectedCountryCode = this.resolveFilterCountry(filters.country ?? '');
 
     return this.scholarships().filter((item) => {
       const matchesSearch = !search || [item.title, item.description, item.provider]
         .some((value) => value.toLocaleLowerCase().includes(search));
-      const matchesCountry = !filters.country || (selectedCountry
-        ? this.countryIdentity(this.countryReference(item)) === this.countryIdentity(selectedCountry)
-        : this.referenceId(item.country) === filters.country);
+      const matchesCountry = !filters.country || this.country.code(this.countryReference(item)) === selectedCountryCode;
       const matchesUniversity = !filters.university || this.referenceId(item.university) === filters.university;
       const matchesCategory = !filters.category || this.referenceId(item.category) === filters.category;
       const matchesFunding = !filters.fundingType || item.fundingType === filters.fundingType;
@@ -90,34 +85,27 @@ export class ExploreComponent {
     });
   });
 
-  readonly countryNodes = computed<CountryNode[]>(() => {
-    const grouped = new Map<string, { country: ReferenceItem; count: number }>();
+  readonly mapCountries = computed<MapCountryData[]>(() => {
+    const grouped = new Map<string, number>();
 
     this.filteredScholarships().forEach((item) => {
-      const country = this.countryReference(item);
-      if (!country) return;
-
-      const normalized = normalizeCountryName(country.name);
-      if (!normalized) return;
-      const displayCountry: ReferenceItem = {
-        ...country,
-        name: normalized.name,
-        code: country.code ?? normalized.code
-      };
-      const groupKey = displayCountry.code ?? normalized.name;
-      const current = grouped.get(groupKey);
-      grouped.set(groupKey, current
-        ? { ...current, count: current.count + 1 }
-        : { country: displayCountry, count: 1 });
+      const code = this.country.code(this.countryReference(item));
+      if (code) grouped.set(code, (grouped.get(code) ?? 0) + 1);
     });
 
-    return [...grouped.values()].flatMap(({ country, count }) => {
-      const coordinates = countryCoordinates(country);
-      return coordinates ? [{ country, count, ...webMercatorPosition(coordinates) }] : [];
-    });
+    return [...grouped].map(([code, count]) => ({ code, count }));
   });
 
-  readonly destinations = computed(() => this.referenceOptions(this.scholarships(), (item) => this.countryReference(item), true));
+  readonly selectedCountryCode = computed(() => this.resolveFilterCountry(this.filterValues().country ?? ''));
+  readonly destinations = computed<DestinationOption[]>(() => {
+    const options = new Map<string, DestinationOption>();
+    for (const scholarship of this.scholarships()) {
+      const metadata = this.country.metadata(this.countryReference(scholarship));
+      if (metadata) options.set(metadata.code, metadata);
+    }
+    const collator = new Intl.Collator(this.i18n.language(), { sensitivity: 'base' });
+    return [...options.values()].sort((left, right) => collator.compare(left.name, right.name));
+  });
   readonly availableUniversities = computed(() => this.referenceOptions(this.scholarships(), (item) => this.referenceFrom(item.university, this.universities())));
   readonly availableCategories = computed(() => this.referenceOptions(this.scholarships(), (item) => this.referenceFrom(item.category, this.categories())));
   readonly fundingTypes = computed(() => this.uniqueStrings(this.scholarships().map((item) => item.fundingType)));
@@ -170,12 +158,24 @@ export class ExploreComponent {
 
   reset(): void {
     this.filters.reset();
-    this.load();
   }
 
-  selectCountry(id: string): void {
-    const current = this.filters.controls.country.value;
-    this.filters.controls.country.setValue(current === id ? '' : id);
+  applyFilters(): void {
+    this.scrollToResults();
+  }
+
+  selectCountry(code: string): void {
+    const matches = this.filteredScholarships().filter((item) =>
+      this.country.code(this.countryReference(item)) === code
+    );
+    if (matches.length === 1) {
+      void this.router.navigate(['/scholarships', matches[0]._id]);
+      return;
+    }
+    if (matches.length > 1) {
+      this.filters.controls.country.setValue(code);
+      this.scrollToResults();
+    }
   }
 
   toggleFavorite(item: Scholarship): void {
@@ -214,18 +214,13 @@ export class ExploreComponent {
 
   private referenceOptions(
     scholarships: Scholarship[],
-    getReference: (item: Scholarship) => ReferenceItem | null,
-    normalizeCountries = false
+    getReference: (item: Scholarship) => ReferenceItem | null
   ): ReferenceItem[] {
     const options = new Map<string, ReferenceItem>();
     scholarships.forEach((item) => {
       const reference = getReference(item);
       if (!reference) return;
-      const normalized = normalizeCountries ? normalizeCountryName(reference.name) : null;
-      const option = normalized
-        ? { ...reference, name: normalized.name, code: reference.code ?? normalized.code }
-        : reference;
-      options.set(normalizeCountries ? this.countryIdentity(option) : option._id, option);
+      options.set(reference._id, reference);
     });
     return [...options.values()].sort((left, right) => left.name.localeCompare(right.name));
   }
@@ -235,9 +230,15 @@ export class ExploreComponent {
       .sort((left, right) => left.localeCompare(right));
   }
 
-  private countryIdentity(country: ReferenceItem | null): string {
-    if (!country) return '';
-    const normalized = normalizeCountryName(country.name);
-    return country.code?.toUpperCase() ?? normalized?.code ?? normalized?.name.toLocaleLowerCase() ?? country._id;
+  private resolveFilterCountry(value: string): string {
+    if (!value) return '';
+    if (/^[a-z]{2}$/i.test(value)) return value.toUpperCase();
+    return this.country.code(this.countries().find((item) => item._id === value))
+      ?? this.country.code(value)
+      ?? '';
+  }
+
+  private scrollToResults(): void {
+    setTimeout(() => document.getElementById('opportunity-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   }
 }
