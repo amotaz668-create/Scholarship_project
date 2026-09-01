@@ -27,7 +27,6 @@ import { AuthService } from '../../../core/services/auth.service';
         } @else {
           <a routerLink="/employee/dashboard" routerLinkActive="active">Overview</a>
           <a routerLink="/employee/scholarships" routerLinkActive="active">Scholarships</a>
-          <a routerLink="/employee/applications" routerLinkActive="active">Application review</a>
           <a routerLink="/employee/notifications" routerLinkActive="active">Notifications</a>
         }
       </nav>

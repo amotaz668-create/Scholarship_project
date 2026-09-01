@@ -27,7 +27,34 @@ import { apiErrorMessage } from '../../../core/services/error-message';
           @if (error()) { <div class="alert error">{{ error() }}</div> }
           <form [formGroup]="form" (ngSubmit)="submit()">
             <label>Email address<input type="email" formControlName="email" autocomplete="email" placeholder="you@example.com"></label>
-            <label>Password<input type="password" formControlName="password" autocomplete="current-password" placeholder="At least 6 characters"></label>
+            <label>Password
+              <div class="password-field">
+                <input
+                  [type]="showPassword() ? 'text' : 'password'"
+                  formControlName="password"
+                  autocomplete="current-password"
+                  placeholder="At least 6 characters"
+                />
+                <button
+                  type="button"
+                  class="password-toggle"
+                  (click)="showPassword.set(!showPassword())"
+                  [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                  [attr.aria-pressed]="showPassword()"
+                >
+                  @if (showPassword()) {
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 4.3A10.8 10.8 0 0 1 12 4c5.2 0 9 4 10.5 8-0.5 1.4-1.4 2.7-2.5 3.8M6.2 6.2C4.4 7.5 3.2 9.2 1.5 12c1.5 4 5.3 8 10.5 8 1.7 0 3.2-.4 4.5-1"/>
+                    </svg>
+                  } @else {
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6S2 12 2 12Z"/>
+                      <circle cx="12" cy="12" r="2.5"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+            </label>
             <button class="button primary wide" type="submit" [disabled]="form.invalid || loading()">
               {{ loading() ? 'Opening passport…' : 'Sign in →' }}
             </button>
@@ -45,6 +72,7 @@ export class LoginComponent {
   private readonly route = inject(ActivatedRoute);
   readonly loading = signal(false);
   readonly error = signal('');
+  readonly showPassword = signal(false);
   readonly form = this.fb.nonNullable.group({
     email: [this.route.snapshot.queryParamMap.get('email') ?? '', [Validators.required, Validators.email]],
     password: ['', Validators.required]

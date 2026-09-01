@@ -21,9 +21,13 @@ import { ThemeService } from '../../../core/services/theme.service';
         <a routerLink="/explore" routerLinkActive="active">Explore</a>
         @if (auth.role() === 'student') {
           <a routerLink="/journey" routerLinkActive="active">My Journey</a>
+          <a routerLink="/applications" routerLinkActive="active">
+            My Applications
+          </a>
           <a routerLink="/saved" routerLinkActive="active">Saved</a>
           <a routerLink="/notifications" routerLinkActive="active">Notifications</a>
           <a routerLink="/profile" routerLinkActive="active">Profile</a>
+          
         }
       </nav>
 
