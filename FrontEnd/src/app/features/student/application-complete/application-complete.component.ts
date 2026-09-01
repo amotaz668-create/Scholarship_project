@@ -157,7 +157,16 @@ export class ApplicationCompleteComponent {
     this.applications.update(this.id, {
       answers,
       profileData,
-      documentIds: [...this.selectedDocumentIds()],
+      documents: (this.preparation()?.availableDocuments ?? [])
+        .filter((document) => this.selectedDocumentIds().has(document._id))
+        .map((document) => ({
+          documentId: document._id,
+          name: document.type,
+          type: document.type,
+          fileName: document.fileName,
+          fileUrl: document.fileUrl,
+          mimeType: document.mimeType
+        })),
       saveProfile: this.saveToProfile.value
     }).pipe(finalize(() => this.saving.set(false))).subscribe({
       next: ({ data }) => {
@@ -166,7 +175,7 @@ export class ApplicationCompleteComponent {
         else if (review) this.error.set('Complete all required information and documents before review.');
         else this.success.set('Draft saved.');
       },
-      error: (error: unknown) => this.error.set(apiErrorMessage(error, 'Could not save the draft.'))
+      error: (error: unknown) => this.error.set(apiErrorMessage(error, 'Could not save the application. Please try again.'))
     });
   }
 

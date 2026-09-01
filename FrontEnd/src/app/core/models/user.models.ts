@@ -24,6 +24,13 @@ export interface RegisterPayload {
   name: string;
   email: string;
   password: string;
+  confirmPassword: string;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface LoginPayload {

@@ -868,6 +868,12 @@ label small {
   font-weight: 400;
 }
 
+.validation-message {
+  color: var(--danger);
+  font-size: .78rem;
+  font-weight: 650;
+}
+
 input,
 select,
 textarea {

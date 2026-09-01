@@ -112,7 +112,7 @@ export interface CreateApplicationPayload {
 export interface UpdateApplicationPayload {
   answers?: ApplicationAnswer[];
   profileData?: Record<string, unknown>;
-  documentIds?: string[];
+  documents?: ApplicationDocument[];
   saveProfile?: boolean;
 }
 

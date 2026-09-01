@@ -45,6 +45,34 @@ const requiredDocumentTypes = (scholarship) => {
   return [...new Set([...configured, ...dynamic])];
 };
 
+const normalizeApplicationDocuments = async (studentId, requestedDocuments = []) => {
+  const uniqueIds = [...new Set(requestedDocuments
+    .map((document) => document?.documentId)
+    .filter(Boolean)
+    .map(String))];
+  if (uniqueIds.length !== requestedDocuments.length) {
+    fail("Each application document must have a unique documentId");
+  }
+
+  const documents = await Document.find({ _id: { $in: uniqueIds }, studentId });
+  if (documents.length !== uniqueIds.length) {
+    fail("One or more documents are invalid or unauthorized", 403);
+  }
+
+  const byId = new Map(documents.map((document) => [String(document._id), document]));
+  return uniqueIds.map((id) => {
+    const document = byId.get(id);
+    return {
+      documentId: document._id,
+      name: document.type,
+      type: document.type,
+      fileName: document.fileName,
+      fileUrl: document.fileUrl,
+      mimeType: document.mimeType,
+    };
+  });
+};
+
 const evaluateApplication = (application, scholarship, user, profile) => {
   const requirements = scholarship.applicationRequirements || [];
   const answers = answerMap(application.answers);
@@ -109,11 +137,14 @@ const createApplication = async (studentId, scholarshipId, applicationData = {})
   const scholarship = await Scholarship.findById(scholarshipId);
   if (!scholarship) fail("Scholarship not found", 404);
 
+  const documents = applicationData.documents
+    ? await normalizeApplicationDocuments(studentId, applicationData.documents)
+    : [];
   const application = await Application.create({
     studentId,
     scholarshipId,
     scholarshipTitle: scholarship.title,
-    documents: applicationData.documents || [],
+    documents,
     answers: applicationData.answers || [],
     status: "draft",
   });
@@ -244,18 +275,12 @@ const updateApplication = async (applicationId, studentId, updateData) => {
     application.profileData = safeProfileData;
   }
 
-  if (updateData.documentIds) {
-    const uniqueIds = [...new Set(updateData.documentIds.map(String))];
-    const documents = await Document.find({ _id: { $in: uniqueIds }, studentId });
-    if (documents.length !== uniqueIds.length) fail("One or more documents are invalid or unauthorized", 403);
-    application.documents = documents.map((document) => ({
-      documentId: document._id,
-      name: document.type,
-      type: document.type,
-      fileName: document.fileName,
-      fileUrl: document.fileUrl,
-      mimeType: document.mimeType,
-    }));
+  if (updateData.documents || updateData.documentIds) {
+    // Keep documentIds as a compatibility input for older clients, while all
+    // newly stored and returned values use the object structure above.
+    const requestedDocuments = updateData.documents
+      || updateData.documentIds.map((documentId) => ({ documentId }));
+    application.documents = await normalizeApplicationDocuments(studentId, requestedDocuments);
   }
 
   if (updateData.saveProfile && Object.keys(safeProfileData).length) {

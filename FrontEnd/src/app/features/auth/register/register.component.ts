@@ -4,6 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { apiErrorMessage } from '../../../core/services/error-message';
+import { passwordMatchValidator } from '../../../core/validators/password-match.validator';
 
 @Component({
   selector: 'app-register',
@@ -30,6 +31,8 @@ import { apiErrorMessage } from '../../../core/services/error-message';
             <label>Full name<input formControlName="name" autocomplete="name" placeholder="Your full name"></label>
             <label>Email address<input type="email" formControlName="email" autocomplete="email" placeholder="you@example.com"></label>
             <label>Password<input type="password" formControlName="password" autocomplete="new-password" placeholder="Minimum 6 characters"></label>
+            <label>Confirm password<input type="password" formControlName="confirmPassword" autocomplete="new-password" placeholder="Re-enter your password"></label>
+            @if (form.hasError('passwordMismatch') && (form.controls.confirmPassword.touched || submitted())) { <small class="validation-message">Passwords do not match.</small> }
             <button class="button primary wide" type="submit" [disabled]="form.invalid || loading()">
               {{ loading() ? 'Creating passport…' : 'Create student account →' }}
             </button>
@@ -45,14 +48,18 @@ export class RegisterComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly loading = signal(false);
+  readonly submitted = signal(false);
   readonly error = signal('');
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(128)]]
-  });
+    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(128)]],
+    confirmPassword: ['', [Validators.required, Validators.maxLength(128)]]
+  }, { validators: passwordMatchValidator('password', 'confirmPassword') });
 
   submit(): void {
+    this.submitted.set(true);
+    this.form.markAllAsTouched();
     if (this.form.invalid || this.loading()) return;
     this.loading.set(true);
     this.error.set('');

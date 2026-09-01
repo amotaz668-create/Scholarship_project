@@ -2,9 +2,16 @@ const applicationService = require("../services/application");
 
 const { createLog } = require("../services/adminLog.service");
 
-const sendError = (res, error, fallbackStatus = 400) => res
-  .status(error.statusCode || fallbackStatus)
-  .json({ success: false, message: error.message, ...(error.details ? { missing: error.details } : {}) });
+const sendError = (res, error, fallbackStatus = 400) => {
+  const isDatabaseValidationError = error?.name === "ValidationError" || error?.name === "CastError";
+  const status = isDatabaseValidationError ? 400 : (error.statusCode || fallbackStatus);
+  const message = isDatabaseValidationError
+    ? "Could not save the application. Please review the selected documents and try again."
+    : error.message;
+  return res
+    .status(status)
+    .json({ success: false, message, ...(error.details ? { missing: error.details } : {}) });
+};
 
 // ==========================================
 // 1. إنشاء طلب تقديم جديد

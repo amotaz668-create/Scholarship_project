@@ -44,6 +44,39 @@ const findById = async (id) => {
 
 
 // ==============================
+// Change Authenticated User Password
+// ==============================
+const changePassword = async (id, currentPassword, newPassword) => {
+    const user = await User.findById(id).select("+password");
+
+    if (!user) {
+        const error = new Error("User not found");
+        error.statusCode = 404;
+        throw error;
+    }
+
+    const currentMatches = await bcrypt.compare(currentPassword, user.password);
+    if (!currentMatches) {
+        const error = new Error("Current password is incorrect");
+        error.statusCode = 401;
+        throw error;
+    }
+
+    const reusesCurrentPassword = await bcrypt.compare(newPassword, user.password);
+    if (reusesCurrentPassword) {
+        const error = new Error("New password must be different from the current password");
+        error.statusCode = 400;
+        throw error;
+    }
+
+    // User has no password hashing save hook, so hash once here and write the
+    // completed hash directly. No password value is returned from this method.
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await User.updateOne({ _id: user._id }, { $set: { password: hashedPassword } });
+};
+
+
+// ==============================
 // Get All Users
 // ==============================
 const getAllUsers = async (filters = {}) => {
@@ -134,6 +167,7 @@ module.exports = {
     createUser,
     findByEmail,
     findById,
+    changePassword,
     getAllUsers,
     updateUser,
     deleteUser,

@@ -21,6 +21,15 @@ const registerValidator = Joi.object({
         .max(128)
         .required(),
 
+    confirmPassword: Joi.string()
+        .required()
+        .valid(Joi.ref("password"))
+        .messages({
+            "any.only": "Passwords do not match",
+            "string.empty": "Password confirmation is required",
+            "any.required": "Password confirmation is required"
+        }),
+
     // Public registration should create students only.
     // Employee/Admin accounts should be created by an Admin.
     role: Joi.forbidden()
@@ -56,10 +65,34 @@ const updateProfileValidator = Joi.object({
         .lowercase()
         .email(),
 
-    password: Joi.string()
+    password: Joi.forbidden()
+}).min(1);
+
+
+// ==============================
+// Change Password
+// ==============================
+const changePasswordValidator = Joi.object({
+    currentPassword: Joi.string()
+        .min(1)
+        .max(128)
+        .required()
+        .messages({ "string.empty": "Current password is required" }),
+
+    newPassword: Joi.string()
         .min(6)
         .max(128)
-}).min(1);
+        .required(),
+
+    confirmPassword: Joi.string()
+        .required()
+        .valid(Joi.ref("newPassword"))
+        .messages({
+            "any.only": "New passwords do not match",
+            "string.empty": "Password confirmation is required",
+            "any.required": "Password confirmation is required"
+        })
+});
 
 
 // ==============================
@@ -129,6 +162,7 @@ module.exports = {
     registerValidator,
     loginValidator,
     updateProfileValidator,
+    changePasswordValidator,
     updateUserValidator,
     createStaffValidator,
     objectIdValidator

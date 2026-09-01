@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, ListResponse } from '../models/api.models';
-import { User, UserRole } from '../models/user.models';
+import { ChangePasswordPayload, User, UserRole } from '../models/user.models';
 
 @Injectable({ providedIn: 'root' })
 export class UserService {
@@ -13,8 +13,12 @@ export class UserService {
     return this.http.get<ApiResponse<User>>(`${environment.apiUrl}/users/me`);
   }
 
-  updateMe(payload: Partial<Pick<User, 'name' | 'email'> & { password: string }>): Observable<ApiResponse<User>> {
+  updateMe(payload: Partial<Pick<User, 'name' | 'email'>>): Observable<ApiResponse<User>> {
     return this.http.patch<ApiResponse<User>>(`${environment.apiUrl}/users/me`, payload);
+  }
+
+  changePassword(payload: ChangePasswordPayload): Observable<{ success: boolean; message: string }> {
+    return this.http.patch<{ success: boolean; message: string }>(`${environment.apiUrl}/users/me/password`, payload);
   }
 
   getAll(filters: { role?: UserRole; isActive?: boolean; search?: string } = {}): Observable<ListResponse<User>> {

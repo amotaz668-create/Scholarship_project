@@ -9,6 +9,7 @@ const {
   registerValidator,
   loginValidator,
   updateProfileValidator,
+  changePasswordValidator,
   updateUserValidator,
   createStaffValidator,
   objectIdValidator,
@@ -195,6 +196,42 @@ const updateMe = async (req, res, next) => {
       });
     }
 
+    next(error);
+  }
+};
+
+// ==========================================
+// Change Current User Password
+// ==========================================
+
+const changePassword = async (req, res, next) => {
+  try {
+    const { error, value } = changePasswordValidator.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0].message,
+      });
+    }
+
+    await userService.changePassword(
+      req.user._id,
+      value.currentPassword,
+      value.newPassword,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Password changed successfully",
+    });
+  } catch (error) {
+    if (error.statusCode) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
     next(error);
   }
 };
@@ -454,6 +491,7 @@ module.exports = {
   login,
   getMe,
   updateMe,
+  changePassword,
   getAllUsers,
   getUserById,
   updateUser,

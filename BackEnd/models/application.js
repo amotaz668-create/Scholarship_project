@@ -1,5 +1,20 @@
 const mongoose = require('mongoose');
 
+// Define this explicitly because the document metadata itself has a field named
+// `type`. When the object is declared inline, Mongoose can interpret that field
+// as the array's schema type and cast the entire `documents` path to [String].
+const applicationDocumentSchema = new mongoose.Schema(
+  {
+    documentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
+    name: { type: String, trim: true, maxlength: 100 },
+    type: { type: String, trim: true, maxlength: 100 },
+    fileName: { type: String, trim: true, maxlength: 255 },
+    fileUrl: { type: String, trim: true, maxlength: 2048 },
+    mimeType: { type: String, trim: true, maxlength: 100 },
+  },
+  { _id: false },
+);
+
 const applicationSchema = new mongoose.Schema({
 
   studentId: {
@@ -25,16 +40,10 @@ const applicationSchema = new mongoose.Schema({
     default: null
   },
 
-  documents: [
-    {
-      documentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Document' },
-      name: String,
-      type: String,
-      fileName: String,
-      fileUrl: String,
-      mimeType: String
-    }
-  ],
+  documents: {
+    type: [applicationDocumentSchema],
+    default: [],
+  },
 
   answers: [
     {

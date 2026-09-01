@@ -18,19 +18,48 @@ const validateCreateApplication = [
     .isMongoId()
     .withMessage('Invalid Scholarship ID format'),
   
-  // فحص المستندات (لو مبعوتة لازم تكون Array وكل عنصر فيه name و fileUrl)
+  // Application documents are metadata objects. The service resolves each
+  // documentId against the authenticated student's wallet before saving, so
+  // client-supplied file metadata is never trusted as the source of truth.
   body('documents')
     .optional()
     .isArray()
     .withMessage('Documents must be an array'),
+  body('documents.*')
+    .optional()
+    .isObject()
+    .withMessage('Each document must be an object'),
+  body('documents.*.documentId')
+    .exists()
+    .withMessage('Document ID is required')
+    .bail()
+    .isMongoId()
+    .withMessage('Invalid document ID'),
   body('documents.*.name')
     .optional()
     .isString()
+    .isLength({ max: 100 })
     .withMessage('Document name must be a string'),
+  body('documents.*.type')
+    .optional()
+    .isString()
+    .isLength({ max: 100 })
+    .withMessage('Document type must be a string'),
+  body('documents.*.fileName')
+    .optional()
+    .isString()
+    .isLength({ max: 255 })
+    .withMessage('Document file name must be a string'),
   body('documents.*.fileUrl')
     .optional()
-    .isURL()
-    .withMessage('Invalid file URL'),
+    .isString()
+    .isLength({ max: 2048 })
+    .withMessage('Document file URL must be a string'),
+  body('documents.*.mimeType')
+    .optional()
+    .isString()
+    .isLength({ max: 100 })
+    .withMessage('Document MIME type must be a string'),
 
   // فحص الإجابات
   body('answers')
@@ -89,6 +118,48 @@ const validateUpdateApplication = [
     .optional()
     .isArray()
     .withMessage('Documents must be an array'),
+
+  body('documents.*')
+    .optional()
+    .isObject()
+    .withMessage('Each document must be an object'),
+
+  body('documents.*.documentId')
+    .exists()
+    .withMessage('Document ID is required')
+    .bail()
+    .isMongoId()
+    .withMessage('Invalid document ID'),
+
+  body('documents.*.name')
+    .optional()
+    .isString()
+    .isLength({ max: 100 })
+    .withMessage('Document name must be a string'),
+
+  body('documents.*.type')
+    .optional()
+    .isString()
+    .isLength({ max: 100 })
+    .withMessage('Document type must be a string'),
+
+  body('documents.*.fileName')
+    .optional()
+    .isString()
+    .isLength({ max: 255 })
+    .withMessage('Document file name must be a string'),
+
+  body('documents.*.fileUrl')
+    .optional()
+    .isString()
+    .isLength({ max: 2048 })
+    .withMessage('Document file URL must be a string'),
+
+  body('documents.*.mimeType')
+    .optional()
+    .isString()
+    .isLength({ max: 100 })
+    .withMessage('Document MIME type must be a string'),
   
   body('answers')
     .optional()

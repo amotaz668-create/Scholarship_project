@@ -10,6 +10,7 @@ Base URL: `http://localhost:3000/api`
 | Login | `POST /auth/login` | Public |
 | Current account | `GET /users/me` | Authenticated |
 | Update current account | `PATCH /users/me` | Authenticated |
+| Change current password | `PATCH /users/me/password` | Authenticated |
 | List/filter users | `GET /users` | Admin |
 | Get/update/delete user | `GET/PATCH/DELETE /users/:id` | Admin |
 | Create staff account | `POST /users/staff` | Admin |

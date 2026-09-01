@@ -5,6 +5,7 @@ const {
     login,
     getMe,
     updateMe,
+    changePassword,
     getAllUsers,
     getUserById,
     updateUser,
@@ -44,6 +45,12 @@ router.patch(
     "/users/me",
     authenticate,
     updateMe
+);
+
+router.patch(
+    "/users/me/password",
+    authenticate,
+    changePassword
 );
 
 
