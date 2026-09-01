@@ -266,7 +266,7 @@ small {
   max-width: 100%;
   font-size: 0.9rem;
   font-weight: 700;
-  color: white;
+  color: var(--atlas-text, var(--ink));
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -291,13 +291,13 @@ small {
   align-items: flex-start;
 }
 
-/* Light mode */
-body.light .management-sidebar .brand b {
-  color: #000000;
+/* The active theme is stored on the root html element. */
+:root[data-theme='light'] .management-sidebar .brand b {
+  color: var(--atlas-text, #18181b);
 }
 
-body.light .management-sidebar .brand small {
-  color: #2563eb;
+:root[data-theme='light'] .management-sidebar .brand small {
+  color: var(--atlas-accent, #2563eb);
 }
 
 /* Small screens */
