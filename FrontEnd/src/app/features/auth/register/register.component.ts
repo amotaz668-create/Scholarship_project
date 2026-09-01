@@ -11,7 +11,7 @@ import { apiErrorMessage } from '../../../core/services/error-message';
   imports: [ReactiveFormsModule, RouterLink],
   template: `
     <main class="auth-page register-page">
-      <a class="brand auth-brand" routerLink="/"><span class="brand-mark">SA</span><span><b>Scholarship</b><small>ATLAS</small></span></a>
+      <a class="brand auth-brand" routerLink="/"><img src="/logo.png" alt="Scholarship Atlas" class="brand-logo" /><span class="brand-text">Scholarship Atlas</span></a>
       <section class="auth-visual">
         <div class="passport-preview">
           <small>OPPORTUNITY PASSPORT</small><b>Scholarship Atlas</b><span>EXPLORE · APPLY · STUDY</span>

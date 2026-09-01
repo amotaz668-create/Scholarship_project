@@ -11,7 +11,7 @@ import { ThemeService } from '../../../core/services/theme.service';
   template: `
     <header class="atlas-nav">
       <a class="brand" routerLink="/" aria-label="Scholarship Atlas home">
-        <span class="brand-mark">SA</span>
+        <img src="/logo.png" alt="Scholarship Atlas" class="brand-logo" />
         <span><b>Scholarship</b><small>ATLAS</small></span>
       </a>
 
