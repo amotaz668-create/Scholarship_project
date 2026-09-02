@@ -86,6 +86,7 @@ export interface ScholarshipApplication {
   studentId: string;
   scholarshipId: string | Scholarship;
   scholarshipTitle: string;
+  selectedDegree?: string | null;
   assignedEmployeeId?: string | null;
   documents: ApplicationDocument[];
   answers: ApplicationAnswer[];
@@ -105,6 +106,7 @@ export interface ScholarshipApplication {
 
 export interface CreateApplicationPayload {
   scholarshipId: string;
+  selectedDegree: string;
   documents?: ApplicationDocument[];
   answers?: ApplicationAnswer[];
 }

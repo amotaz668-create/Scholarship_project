@@ -21,7 +21,7 @@ const createApplication = async (req, res) => {
   try {
     const studentId = req.user.id;
 
-    const { scholarshipId, documents, answers } = req.body;
+    const { scholarshipId, documents, answers, selectedDegree } = req.body;
 
     const result = await applicationService.createApplication(
       studentId,
@@ -29,6 +29,7 @@ const createApplication = async (req, res) => {
       {
         documents,
         answers,
+        selectedDegree
       },
     );
 

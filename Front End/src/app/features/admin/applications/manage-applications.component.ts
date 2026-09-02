@@ -19,51 +19,112 @@ import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.c
   standalone: true,
   imports: [DatePipe, FormsModule, StatusBadgeComponent, UiStateComponent],
   template: `
-    <section class="management-page">
-      <header class="page-header">
-        <p class="eyebrow">APPLICATION OPERATIONS</p>
-        <h1>Manage applications</h1>
-        <p>Admin-only application list with transitions enforced by the backend.</p>
-      </header>
+   <section class="management-page">
+  <header class="page-header">
+    <p class="eyebrow">APPLICATION OPERATIONS</p>
 
-      <div class="toolbar">
-        <input [ngModel]="search()" (ngModelChange)="search.set($event)" placeholder="Search scholarship or application ID">
-        <select aria-label="Application status filter" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event)">
-          <option value="">All statuses</option>
-          @for (item of statuses; track item) { <option [value]="item">{{ label(item) }}</option> }
-        </select>
-      </div>
+    <h1>Manage applications</h1>
 
-      @if (error()) { <div class="alert error">{{ error() }}</div> }
-      @if (loading()) {
-        <div class="skeleton table-skeleton"></div>
-      } @else if (!filtered().length) {
-        <app-ui-state title="No applications found" message="Applications matching these filters will appear here." />
-      } @else {
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Application</th><th>Student ID</th><th>Date</th><th>Status</th><th>Next action</th></tr></thead>
-            <tbody>
-              @for (item of filtered(); track item._id) {
-                <tr>
-                  <td><b>{{ item.scholarshipTitle }}</b><small>{{ item._id }}</small></td>
-                  <td>{{ item.studentId }}</td>
-                  <td>{{ item.createdAt | date:'mediumDate' }}</td>
-                  <td><app-status-badge [status]="item.status" /></td>
-                  <td>
-                    <div class="table-actions">
-                      @for (next of transitions(item.status); track next) {
-                        <button type="button" [disabled]="updating().has(item._id)" (click)="changeStatus(item, next)">{{ label(next) }}</button>
-                      } @empty { <span class="muted">No actions</span> }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+    <p>
+      Admin-only application list with transitions enforced by the backend.
+    </p>
+  </header>
+
+  <div class="toolbar">
+    <input
+      [ngModel]="search()"
+      (ngModelChange)="search.set($event)"
+      placeholder="Search scholarship, degree or application ID"
+    >
+
+    <select
+      aria-label="Application status filter"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event)"
+    >
+      <option value="">All statuses</option>
+
+      @for (item of statuses; track item) {
+        <option [value]="item">
+          {{ label(item) }}
+        </option>
       }
-    </section>
+    </select>
+  </div>
+
+  @if (error()) {
+    <div class="alert error">
+      {{ error() }}
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="skeleton table-skeleton"></div>
+  } @else if (!filtered().length) {
+    <app-ui-state
+      title="No applications found"
+      message="Applications matching these filters will appear here."
+    />
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Application</th>
+            <th>Degree</th>
+            <th>Student ID</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Next action</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (item of filtered(); track item._id) {
+            <tr>
+              <td>
+                <b>{{ item.scholarshipTitle }}</b>
+                <small>{{ item._id }}</small>
+              </td>
+
+              <td>
+                <b>{{ item.selectedDegree || 'Not specified' }}</b>
+              </td>
+
+              <td>
+                {{ item.studentId }}
+              </td>
+
+              <td>
+                {{ item.createdAt | date:'mediumDate' }}
+              </td>
+
+              <td>
+                <app-status-badge [status]="item.status" />
+              </td>
+
+              <td>
+                <div class="table-actions">
+                  @for (next of transitions(item.status); track next) {
+                    <button
+                      type="button"
+                      [disabled]="updating().has(item._id)"
+                      (click)="changeStatus(item, next)"
+                    >
+                      {{ label(next) }}
+                    </button>
+                  } @empty {
+                    <span class="muted">No actions</span>
+                  }
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
   `
 })
 export class ManageApplicationsComponent {
@@ -82,7 +143,7 @@ export class ManageApplicationsComponent {
     const status = this.statusFilter();
     return this.applications().filter((item) =>
       (!status || item.status === status) &&
-      (!search || `${item.scholarshipTitle} ${item._id} ${item.studentId}`.toLocaleLowerCase().includes(search))
+      (!search || `${item.scholarshipTitle} ${item.selectedDegree ?? ''} ${item._id} ${item.studentId}`.toLocaleLowerCase().includes(search))
     );
   });
 

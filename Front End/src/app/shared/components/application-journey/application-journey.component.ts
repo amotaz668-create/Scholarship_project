@@ -10,7 +10,12 @@ import { StatusBadgeComponent } from '../status-badge/status-badge.component';
   template: `
     <article class="journey-card">
       <div class="journey-heading">
-        <div><small>APPLICATION JOURNEY</small><h3>{{ application().scholarshipTitle }}</h3></div>
+        <div><small>APPLICATION JOURNEY</small><h3>{{ application().scholarshipTitle }}</h3>
+        <p class="muted">
+  Degree:
+  {{ application().selectedDegree || "Not specified" }}
+</p>
+</div>
         <app-status-badge [status]="application().status" />
       </div>
       <div class="journey-meta">

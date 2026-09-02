@@ -17,10 +17,16 @@ const validateCreateApplication = [
   body('scholarshipId')
     .isMongoId()
     .withMessage('Invalid Scholarship ID format'),
-  
-  // Application documents are metadata objects. The service resolves each
-  // documentId against the authenticated student's wallet before saving, so
-  // client-supplied file metadata is never trusted as the source of truth.
+
+  body("selectedDegree")
+    .isString()
+    .withMessage("Selected degree must be text")
+    .bail()
+    .trim()
+    .notEmpty()
+    .withMessage("Selected degree is required")
+    .isLength({ max: 100 })
+    .withMessage("Selected degree is too long"),
   body('documents')
     .optional()
     .isArray()
@@ -83,13 +89,13 @@ const validateUpdateStatus = [
   param('id')
     .isMongoId()
     .withMessage('Invalid Application ID in URL'),
-  
+
   body('status')
     .notEmpty()
     .withMessage('Status is required')
     .isIn(['under_review', 'missing_documents', 'accepted', 'rejected'])
     .withMessage('Invalid status value. Allowed values: under_review, missing_documents, accepted, rejected'),
-  
+
   body('note')
     .optional()
     .isString()
@@ -103,7 +109,7 @@ const validateApplicationId = [
   param('id')
     .isMongoId()
     .withMessage('Invalid Application ID'),
-  
+
   handleValidationErrors
 ];
 
@@ -113,7 +119,7 @@ const validateUpdateApplication = [
   param('id')
     .isMongoId()
     .withMessage('Invalid Application ID'),
-  
+
   body('documents')
     .optional()
     .isArray()
@@ -160,7 +166,7 @@ const validateUpdateApplication = [
     .isString()
     .isLength({ max: 100 })
     .withMessage('Document MIME type must be a string'),
-  
+
   body('answers')
     .optional()
     .isArray()
@@ -199,6 +205,6 @@ const validateUpdateApplication = [
 module.exports = {
   validateCreateApplication,
   validateUpdateStatus,
-  validateApplicationId , 
+  validateApplicationId,
   validateUpdateApplication
 };

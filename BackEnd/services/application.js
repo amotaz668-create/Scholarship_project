@@ -226,12 +226,43 @@ const createApplication = async (
   scholarshipId,
   applicationData = {},
 ) => {
+  const selectedDegree = applicationData.selectedDegree?.trim();
+
+  if (!selectedDegree) {
+    fail("Selected degree is required");
+  }
+
+  const scholarship = await Scholarship.findById(scholarshipId);
+
+  if (!scholarship) {
+    fail("Scholarship not found", 404);
+  }
+
+  const eligibleDegrees =
+    scholarship.eligibility?.eligibleDegrees || [];
+
+  const matchedDegree = eligibleDegrees.find(
+    (degree) =>
+      degree.toLowerCase() === selectedDegree.toLowerCase(),
+  );
+
+  if (eligibleDegrees.length && !matchedDegree) {
+    fail(
+      "Selected degree is not available for this scholarship",
+    );
+  }
+
+  const degreeToSave = matchedDegree || selectedDegree;
+
   const existing = await Application.findOne({
     studentId,
     scholarshipId,
   }).sort({ createdAt: -1 });
 
   if (existing?.status === "draft") {
+    existing.selectedDegree = degreeToSave;
+    await existing.save();
+
     return {
       application: existing,
       reused: true,
@@ -245,12 +276,6 @@ const createApplication = async (
     );
   }
 
-  const scholarship = await Scholarship.findById(scholarshipId);
-
-  if (!scholarship) {
-    fail("Scholarship not found", 404);
-  }
-
   const documents = applicationData.documents
     ? await normalizeApplicationDocuments(
       studentId,
@@ -262,6 +287,7 @@ const createApplication = async (
     studentId,
     scholarshipId,
     scholarshipTitle: scholarship.title,
+    selectedDegree: degreeToSave,
     documents,
     answers: applicationData.answers || [],
     status: "draft",

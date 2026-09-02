@@ -33,6 +33,12 @@ const applicationSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  selectedDegree: {
+    type: String,
+    trim: true,
+    maxlength: 100,
+    default: null
+  },
 
   assignedEmployeeId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -69,39 +75,39 @@ const applicationSchema = new mongoose.Schema({
       "draft",
       "submitted",    // تعادل pending في متطلبات المشروع
       "under_review",
-      "missing_documents", 
+      "missing_documents",
       "accepted",
       "rejected",
       "withdrawn"
     ],
     default: "draft"
   },
-  
+
   timeline: [
     {
       oldStatus: String,
       newStatus: String,
       changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'user' },
       note: String,
-      date: { type: Date , default: Date.now }
+      date: { type: Date, default: Date.now }
     }
   ],
 
-  notes : String ,
+  notes: String,
 
   submittedAt: Date,
 
   reviewedAt: Date,
-  
+
   reviewedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'user'
   }
 },
 
- {
-  timestamps: true 
-});
+  {
+    timestamps: true
+  });
 
 // لمنع الطالب من التقديم على نفس المنحة أكثر من مرة على مستوى الداتابيز
 applicationSchema.index({ studentId: 1, scholarshipId: 1 });
