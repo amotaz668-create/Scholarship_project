@@ -4,5 +4,112 @@ import { AdminService } from '../../../core/services/admin.service';
 import { apiErrorMessage } from '../../../core/services/error-message';
 import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.component';
 
-@Component({ selector:'app-statistics', standalone:true, imports:[UiStateComponent], template:`<section class="management-page"><header class="page-header"><p class="eyebrow">SYSTEM INTELLIGENCE</p><h1>Statistics</h1><p>MongoDB aggregations returned by the existing admin statistics endpoint.</p></header>@if(error()){<div class="alert error">{{error()}}</div>}<div class="statistics-grid">@for (group of groups(); track group.title) { <section class="management-card"><div class="section-heading"><p class="eyebrow">{{ group.eyebrow }}</p><h2>{{ group.title }}</h2></div>@if(group.items.length){<div class="bar-chart">@for(item of group.items;track item.label){<div><span>{{item.label}}</span><div><i [style.width.%]="width(item.count,group.max)"></i></div><b>{{item.count}}</b></div>}</div>}@else{<app-ui-state [compact]="true" title="No aggregate data" message="This chart will populate when matching records exist." />}</section>}<section class="management-card"><div class="section-heading"><p class="eyebrow">EMPLOYEE WORKLOAD</p><h2>Applications per employee</h2></div>@if(stats()?.applicationsPerEmployee?.length){<div class="employee-load">@for(item of stats()!.applicationsPerEmployee;track item.employeeId){<article><span>{{initials(item.employeeName || 'Employee')}}</span><div><b>{{item.employeeName || 'Unknown employee'}}</b><small>{{item.employeeEmail}}</small></div><strong>{{item.count}}</strong></article>}</div>}@else{<app-ui-state [compact]="true" title="No assigned applications" message="The backend currently has no route to assign applications, so this aggregate may remain empty." />}</section></div></section>` })
-export class StatisticsComponent { private readonly api=inject(AdminService); readonly stats=signal<AdminStatistics|null>(null); readonly error=signal(''); constructor(){this.api.statistics().subscribe({next:({data})=>this.stats.set(data),error:(error:unknown)=>this.error.set(apiErrorMessage(error))});} groups(){const data=this.stats(); const make=(eyebrow:string,title:string,items:Array<{_id:string;count:number}>)=>({eyebrow,title,items:items.map(item=>({label:item._id.replaceAll('_',' '),count:item.count})),max:Math.max(...items.map(item=>item.count),1)}); return [make('APPLICATION PIPELINE','Applications by status',data?.applicationsByStatus??[]),make('DEGREE DISTRIBUTION','Scholarships by degree',data?.scholarshipsByDegree??[])];} width(count:number,max:number){return Math.max(5,count/max*100);} initials(name:string){return name.split(' ').slice(0,2).map(word=>word[0]).join('').toUpperCase();} }
+@Component({
+    selector: 'app-statistics',
+    standalone: true,
+    imports: [UiStateComponent],
+    template: `
+    <section class="management-page">
+
+      <header class="page-header">
+        <p class="eyebrow">SYSTEM INTELLIGENCE</p>
+        <h1>Statistics</h1>
+        <p>
+          MongoDB aggregations returned by the existing admin statistics endpoint.
+        </p>
+      </header>
+
+      @if (error()) {
+        <div class="alert error">{{ error() }}</div>
+      }
+
+      <div class="statistics-grid">
+
+        @for (group of groups(); track group.title) {
+          <section class="management-card">
+
+            <div class="section-heading">
+              <p class="eyebrow">{{ group.eyebrow }}</p>
+              <h2>{{ group.title }}</h2>
+            </div>
+
+            @if (group.items.length) {
+              <div class="bar-chart">
+
+                @for (item of group.items; track item.label) {
+                  <div>
+                    <span>{{ item.label }}</span>
+
+                    <div>
+                      <i [style.width.%]="width(item.count, group.max)"></i>
+                    </div>
+
+                    <b>{{ item.count }}</b>
+                  </div>
+                }
+
+              </div>
+            } @else {
+              <app-ui-state
+                [compact]="true"
+                title="No aggregate data"
+                message="This chart will populate when matching records exist."
+              />
+            }
+
+          </section>
+        }
+
+      </div>
+
+    </section>
+  `
+})
+export class StatisticsComponent {
+    private readonly api = inject(AdminService);
+
+    readonly stats = signal<AdminStatistics | null>(null);
+    readonly error = signal('');
+
+    constructor() {
+        this.api.statistics().subscribe({
+            next: ({ data }) => this.stats.set(data),
+            error: (error: unknown) => this.error.set(apiErrorMessage(error))
+        });
+    }
+
+    groups() {
+        const data = this.stats();
+
+        const make = (
+            eyebrow: string,
+            title: string,
+            items: Array<{ _id: string; count: number }>
+        ) => ({
+            eyebrow,
+            title,
+            items: items.map(item => ({
+                label: item._id.replaceAll('_', ' '),
+                count: item.count
+            })),
+            max: Math.max(...items.map(item => item.count), 1)
+        });
+
+        return [
+            make(
+                'APPLICATION PIPELINE',
+                'Applications by status',
+                data?.applicationsByStatus ?? []
+            ),
+            make(
+                'DEGREE DISTRIBUTION',
+                'Scholarships by degree',
+                data?.scholarshipsByDegree ?? []
+            )
+        ];
+    }
+
+    width(count: number, max: number) {
+        return Math.max(5, (count / max) * 100);
+    }
+}

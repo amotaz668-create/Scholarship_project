@@ -625,8 +625,12 @@ const submitApplication = async (
 
   const application = context.application;
 
-  if (application.status !== "draft") {
-    fail("Only draft applications can be submitted");
+  // Students can submit both new draft applications and applications
+  // that were returned with missing documents after they fix the issues.
+  const submittableStatuses = ["draft", "missing_documents"];
+
+  if (!submittableStatuses.includes(application.status)) {
+    fail("Only draft or applications with missing documents can be submitted");
   }
 
   const readiness = evaluateApplication(
@@ -684,11 +688,13 @@ const submitApplication = async (
   application.profileSnapshot =
     readiness.profileSnapshot;
 
+  const previousStatus = application.status;
+
   application.status = "submitted";
   application.submittedAt = new Date();
 
   application.timeline.push({
-    oldStatus: "draft",
+    oldStatus: previousStatus,
     newStatus: "submitted",
     changedBy: user._id,
     note: "Student submitted the completed application",

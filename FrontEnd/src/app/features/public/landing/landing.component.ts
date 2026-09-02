@@ -9,6 +9,8 @@ import { CatalogService } from '../../../core/services/catalog.service';
 import { CountryService } from '../../../core/services/country.service';
 import { ScholarshipCardComponent } from '../../../shared/components/scholarship-card/scholarship-card.component';
 import { UiStateComponent } from '../../../shared/components/ui-state/ui-state.component';
+import { AuthService } from '../../../core/services/auth.service';
+
 
 interface DestinationSummary { code: string; name: string; count: number; flag: string; }
 
@@ -29,7 +31,6 @@ interface DestinationSummary { code: string; name: string; count: number; flag: 
           <button class="button primary" type="button" (click)="explore()">Explore opportunities →</button>
         </div>
         <div class="hero-actions">
-          <a class="text-link" routerLink="/register">Start your journey <span>↗</span></a>
           <span>Explore · Discover · Qualify · Apply · Study</span>
         </div>
       </div>
@@ -83,6 +84,7 @@ export class LandingComponent {
   private readonly catalogApi = inject(CatalogService);
   private readonly router = inject(Router);
   private readonly country = inject(CountryService);
+  readonly isAuthenticated = inject(AuthService).isAuthenticated;
   readonly search = new FormControl('', { nonNullable: true });
   readonly loading = signal(true);
   readonly error = signal('');
