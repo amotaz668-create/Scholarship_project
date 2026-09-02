@@ -253,9 +253,9 @@ const createApplication = async (
 
   const documents = applicationData.documents
     ? await normalizeApplicationDocuments(
-        studentId,
-        applicationData.documents,
-      )
+      studentId,
+      applicationData.documents,
+    )
     : [];
 
   const application = await Application.create({
@@ -362,19 +362,19 @@ const getStudentApplications = async (user) => {
 
     const readiness = scholarship
       ? evaluateApplication(
-          application,
-          scholarship,
-          user,
-          profile,
-        )
+        application,
+        scholarship,
+        user,
+        profile,
+      )
       : {
-          complete: false,
-          missing: {
-            profileFields: [],
-            answers: [],
-            documents: [],
-          },
-        };
+        complete: false,
+        missing: {
+          profileFields: [],
+          answers: [],
+          documents: [],
+        },
+      };
 
     return {
       ...application,
@@ -466,8 +466,12 @@ const updateApplication = async (
     fail("Application not found or unauthorized", 404);
   }
 
-  if (application.status !== "draft") {
-    fail("Only draft applications can be edited");
+  // Students can edit both new draft applications and
+  // applications returned for missing documents.
+  const editableStatuses = ["draft", "missing_documents"];
+
+  if (!editableStatuses.includes(application.status)) {
+    fail("Only draft or applications with missing documents can be edited");
   }
 
   const requirements =
